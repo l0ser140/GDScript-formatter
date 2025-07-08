@@ -48,18 +48,36 @@
 
 (class_definition ":" @append_hardline)
 
-[
-    (function_definition)
-    (class_definition)
-    (source (variable_statement))
-] @allow_blank_line_before
-
+; EMPTY LINES BETWEEN DEFINITIONS
+;
+; Add 2 newlines between top-level property definitions and function definitions
+; Note: the . between nodes constrains the query to direct siblings (instead of
+; matching a series of indirect siblings like e.g. variable + class + ... +
+; function)
 (source
-    (variable_statement)
-    (function_definition) @prepend_delimiter
-    (#delimiter! "\n")
+    (variable_statement) @append_delimiter
+    .
+    (function_definition)
+    (#delimiter! "\n\n")
 )
-(source (function_definition) @append_delimiter (#delimiter! "\n"))
+(source
+    (function_definition) @append_delimiter
+    .
+    (function_definition)
+    (#delimiter! "\n\n")
+)
+(source
+    (function_definition) @append_delimiter
+    .
+    (class_definition)
+    (#delimiter! "\n\n")
+)
+(source
+    (class_definition) @append_delimiter
+    .
+    (function_definition)
+    (#delimiter! "\n\n")
+)
 
 
 (class_definition) @append_hardline
