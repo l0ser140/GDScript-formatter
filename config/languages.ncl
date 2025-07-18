@@ -9,7 +9,7 @@
         source = {
           git = {
             git = "https://github.com/PrestonKnopp/tree-sitter-gdscript.git",
-            rev = "master",
+            rev = "v6.0.0",
           },
         },
       },
