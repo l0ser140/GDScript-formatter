@@ -224,4 +224,6 @@
 
 (expression_statement) @append_hardline
 
-(return_statement) @append_hardline
+([(return_statement) (pass_statement) (breakpoint_statement) (break_statement) (continue_statement) (tool_statement)] @append_hardline)
+; tree-sitter parses @tool statement as an annotation node for some reason instead of tool_statement
+(source . (annotation) @append_hardline)
