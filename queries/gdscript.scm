@@ -78,6 +78,11 @@
     (function_definition)
     (#delimiter! "\n\n"))
 
+(source
+    (const_statement) @append_delimiter
+    .
+    (function_definition)
+    (#delimiter! "\n\n"))
 
 
 (class_definition) @append_hardline
@@ -95,6 +100,9 @@
 (variable_statement) @append_hardline
 
 (signal_statement) @append_hardline @allow_blank_line_before
+
+(const_statement) @append_hardline @allow_blank_line_before
+(const_statement ":" @append_space)
 
 ; Allow line breaks around binary operators for long expressions
 ; This means that if the programmer has a long expression, they can break it up by wrapping something on a line
