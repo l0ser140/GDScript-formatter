@@ -159,3 +159,5 @@
 (while_statement (body) @prepend_indent_start @append_indent_end)
 
 (expression_statement) @append_hardline
+
+(return_statement) @append_hardline
