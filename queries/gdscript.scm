@@ -40,13 +40,17 @@
 ; FUNCTIONS
 (arguments "," @append_space)
 "->" @prepend_space @append_space
-(class_name_statement) @append_space
 (annotation) @append_space
 
 (function_definition (name) @append_antispace)
 (function_definition ":" @append_hardline)
 
 (class_definition ":" @append_hardline)
+
+(class_name_statement) @append_space
+(source
+    (extends_statement) @append_delimiter
+    (#delimiter! "\n\n"))
 
 ; EMPTY LINES BETWEEN DEFINITIONS
 ;
@@ -55,124 +59,24 @@
 ; matching a series of indirect siblings like e.g. variable + class + ... +
 ; function)
 (source
-    (variable_statement) @append_delimiter
+    [(variable_statement) (function_definition) (class_definition) (signal_statement) (const_statement) (enum_definition) (constructor_definition)] @append_delimiter
     .
-    (function_definition)
+    [(function_definition) (constructor_definition) (class_definition)]
     (#delimiter! "\n\n"))
 
-(source
-    (function_definition) @append_delimiter
-    .
-    (function_definition)
-    (#delimiter! "\n\n"))
-
-(source
-    (function_definition) @append_delimiter
-    .
-    (class_definition)
-    (#delimiter! "\n\n"))
-
-(source
-    (class_definition) @append_delimiter
-    .
-    (function_definition)
-    (#delimiter! "\n\n"))
-
-(source
-    (signal_statement) @append_delimiter
-    .
-    (function_definition)
-    (#delimiter! "\n\n"))
-
-(source
-    (const_statement) @append_delimiter
-    .
-    (function_definition)
-    (#delimiter! "\n\n"))
-
-(source
-    (enum_definition) @append_delimiter
-    .
-    (function_definition)
-    (#delimiter! "\n\n"))
-
-(source
-    (constructor_definition) @append_delimiter
-    .
-    (function_definition)
-    (#delimiter! "\n\n"))
-
-
-(class_definition) @append_hardline
-(source
-    (extends_statement) @append_delimiter
-    (#delimiter! "\n\n"))
-
-
-(class_definition
-  (body) @prepend_indent_start @append_indent_end)
-
-(function_definition
-  (body) @prepend_indent_start @append_indent_end)
-
-(variable_statement) @append_hardline
-
-(signal_statement) @append_hardline @allow_blank_line_before
-
-(const_statement) @append_hardline @allow_blank_line_before
+; CONST DEFINITIONS
 (const_statement ":" @append_space)
 
-(enum_definition) @append_hardline @allow_blank_line_before
+; ENUMS
 (enumerator_list
   "{" @append_input_softline @append_indent_start
   "}" @prepend_input_softline @prepend_indent_end)
-
 (enumerator_list "," @append_spaced_softline)
 (enumerator_list) @prepend_space
 
+; CONSTRUCTORS
 (constructor_definition ":" @append_hardline)
-(constructor_definition (body) @prepend_indent_start @append_indent_end)
-(source
-    (variable_statement) @append_delimiter
-    .
-    (constructor_definition)
-    (#delimiter! "\n\n"))
 
-(source
-    (constructor_definition) @append_delimiter
-    .
-    (constructor_definition)
-    (#delimiter! "\n\n"))
-
-(source
-    (constructor_definition) @append_delimiter
-    .
-    (class_definition)
-    (#delimiter! "\n\n"))
-
-(source
-    (class_definition) @append_delimiter
-    .
-    (constructor_definition)
-    (#delimiter! "\n\n"))
-
-(source
-    (signal_statement) @append_delimiter
-    .
-    (constructor_definition)
-    (#delimiter! "\n\n"))
-
-(source
-    (const_statement) @append_delimiter
-    .
-    (constructor_definition)
-    (#delimiter! "\n\n"))
-
-(source
-    (enum_definition) @append_delimiter
-    .
-    (constructor_definition)
-    (#delimiter! "\n\n"))
 
 ; Allow line breaks around binary operators for long expressions
 ; This means that if the programmer has a long expression, they can break it up by wrapping something on a line
@@ -216,14 +120,24 @@
 
 ; Make sure the body of control structures is indented (the preprended and
 ; appended indents target the body)
-(if_statement (body) @prepend_indent_start @append_indent_end)
-(elif_clause (body) @prepend_indent_start @append_indent_end)
-(else_clause (body) @prepend_indent_start @append_indent_end)
-(for_statement (body) @prepend_indent_start @append_indent_end)
-(while_statement (body) @prepend_indent_start @append_indent_end)
+(body) @prepend_indent_start @append_indent_end
 
-(expression_statement) @append_hardline
+([(return_statement)
+  (pass_statement)
+  (breakpoint_statement)
+  (break_statement)
+  (continue_statement)
+  (tool_statement)
+  (enum_definition)
+  (const_statement)
+  (signal_statement)
+  (variable_statement)
+  (expression_statement)
+  (if_statement)
+  (elif_clause)
+  (else_clause)
+  (for_statement)
+  (while_statement)] @append_hardline @allow_blank_line_before)
 
-([(return_statement) (pass_statement) (breakpoint_statement) (break_statement) (continue_statement) (tool_statement)] @append_hardline)
 ; tree-sitter parses @tool statement as an annotation node for some reason instead of tool_statement
 (source . (annotation) @append_hardline)
