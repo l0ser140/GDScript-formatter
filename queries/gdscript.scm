@@ -5,7 +5,7 @@
 [
   "class_name" "extends" "var" "func" "class"
   "if" "elif" "else" "for" "while"
-  "const" "return" "match" "signal"]
+  "const" "return" "match" "signal" "enum"]
 @append_space
 
 ; Preserve comments and strings as they are
@@ -90,6 +90,12 @@
     (function_definition)
     (#delimiter! "\n\n"))
 
+(source
+    (enum_definition) @append_delimiter
+    .
+    (function_definition)
+    (#delimiter! "\n\n"))
+
 
 (class_definition) @append_hardline
 (source
@@ -109,6 +115,14 @@
 
 (const_statement) @append_hardline @allow_blank_line_before
 (const_statement ":" @append_space)
+
+(enum_definition) @append_hardline @allow_blank_line_before
+(enumerator_list
+  "{" @append_input_softline @append_indent_start
+  "}" @prepend_input_softline @prepend_indent_end)
+
+(enumerator_list "," @append_spaced_softline)
+(enumerator_list) @prepend_space
 
 ; Allow line breaks around binary operators for long expressions
 ; This means that if the programmer has a long expression, they can break it up by wrapping something on a line
