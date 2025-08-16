@@ -5,7 +5,7 @@
 [
   "class_name" "extends" "var" "func" "class"
   "if" "elif" "else" "for" "while"
-  "const" "return" "match"]
+  "const" "return" "match" "signal"]
 @append_space
 
 ; Preserve comments and strings as they are
@@ -93,6 +93,8 @@
   (body) @prepend_indent_start @append_indent_end)
 
 (variable_statement) @append_hardline
+
+(signal_statement) @append_hardline @allow_blank_line_before
 
 ; Allow line breaks around binary operators for long expressions
 ; This means that if the programmer has a long expression, they can break it up by wrapping something on a line
