@@ -79,6 +79,12 @@
     (#delimiter! "\n\n"))
 
 (source
+    (signal_statement) @append_delimiter
+    .
+    (function_definition)
+    (#delimiter! "\n\n"))
+
+(source
     (const_statement) @append_delimiter
     .
     (function_definition)
