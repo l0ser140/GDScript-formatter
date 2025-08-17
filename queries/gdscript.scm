@@ -87,7 +87,7 @@
     "+" "-" "*" "/" "%" "**"
     "==" "!=" "<" ">" "<=" ">=" "and"
     "or" "in" "is"]
-  @prepend_spaced_softline @append_spaced_softline)
+  @prepend_input_softline @append_input_softline)
 
 
 ; OPERATORS
@@ -188,3 +188,11 @@
 (";") @delete
 
 (conditional_expression [("if") ("else")] @prepend_space @append_space)
+(parenthesized_expression (conditional_expression ("else") @prepend_input_softline))
+(conditional_expression (conditional_expression ("else") @prepend_input_softline))
+
+(parenthesized_expression
+ "(" @append_input_softline
+ ")" @prepend_input_softline)
+
+(parenthesized_expression "(" @append_indent_start ")" @prepend_indent_end (#multi_line_only!))
