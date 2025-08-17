@@ -3,6 +3,8 @@ func foo():
 	print(123)
 
 	print(123)
+
+	# comment
 	if true:
 		while true:
 			break

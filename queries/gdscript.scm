@@ -166,7 +166,8 @@
   (else_clause)
   (for_statement)
   (while_statement)
-  (match_statement)] @allow_blank_line_before)
+  (match_statement)
+  (comment)] @allow_blank_line_before)
 
 ; tree-sitter parses @tool statement as an annotation node for some reason instead of tool_statement
 (source . (annotation) @append_hardline)
