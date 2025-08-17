@@ -92,9 +92,9 @@
 
 ; OPERATORS
 ; Calculation operators (restrict to binary operator context to avoid added spaces in other contexts)
-(binary_operator [
-                  "+" "-" "*" "/" "%" "**"])
-@prepend_space @append_space
+; (binary_operator [
+;                   "+" "-" "*" "/" "%" "**"])
+; @prepend_space @append_space
 ; Comparison operators
 [
     "==" "!=" "<" ">" "<=" ">="
