@@ -141,3 +141,11 @@
 
 ; tree-sitter parses @tool statement as an annotation node for some reason instead of tool_statement
 (source . (annotation) @append_hardline)
+
+(setget) @prepend_indent_start @append_indent_end
+(setget ":" @prepend_antispace @append_hardline)
+; why body node in set_body/get_body not getting new indent even though we added indent to all body node?
+(set_body ":" @prepend_antispace @append_hardline @append_indent_start)
+(get_body ":" @prepend_antispace @append_hardline @append_indent_start)
+(set_body) @append_indent_end
+(get_body) @append_indent_end
