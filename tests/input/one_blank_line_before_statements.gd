@@ -20,3 +20,7 @@ func foo():
 		else:
 
 			pass
+
+		match "1":
+			_:
+				pass

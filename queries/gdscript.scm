@@ -137,7 +137,8 @@
   (elif_clause)
   (else_clause)
   (for_statement)
-  (while_statement)] @append_hardline @allow_blank_line_before)
+  (while_statement)
+  (match_statement)] @append_hardline @allow_blank_line_before)
 
 ; tree-sitter parses @tool statement as an annotation node for some reason instead of tool_statement
 (source . (annotation) @append_hardline)
@@ -149,3 +150,8 @@
 (get_body ":" @prepend_antispace @append_hardline @append_indent_start)
 (set_body) @append_indent_end
 (get_body) @append_indent_end
+
+(match_statement ":" @prepend_antispace @append_hardline)
+(match_body) @prepend_indent_start @append_indent_end
+(pattern_section ":" @prepend_antispace @append_hardline)
+(pattern_section "," @prepend_antispace @append_space)

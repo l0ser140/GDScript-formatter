@@ -14,3 +14,7 @@ func foo():
 			pass
 		else:
 			pass
+
+		match "1":
+			_:
+				pass
