@@ -155,3 +155,6 @@
 (match_body) @prepend_indent_start @append_indent_end
 (pattern_section ":" @prepend_antispace @append_hardline)
 (pattern_section "," @prepend_antispace @append_space)
+
+; not sure if something except statemenent ending uses semicolon in gdscript
+(";") @delete
