@@ -186,3 +186,5 @@
 
 ; not sure if something except statemenent ending uses semicolon in gdscript
 (";") @delete
+
+(conditional_expression [("if") ("else")] @prepend_space @append_space)
