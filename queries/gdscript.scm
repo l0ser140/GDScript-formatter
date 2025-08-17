@@ -50,8 +50,9 @@
 
 (class_name_statement) @append_space
 (source
-    (extends_statement) @append_delimiter
-    (#delimiter! "\n\n"))
+    (extends_statement) @append_delimiter @append_hardline
+    (#delimiter! "\n"))
+(extends_statement) @prepend_space
 
 ; EMPTY LINES BETWEEN DEFINITIONS
 ;
@@ -139,7 +140,33 @@
   (else_clause)
   (for_statement)
   (while_statement)
-  (match_statement)] @append_hardline @allow_blank_line_before)
+  (match_statement)] @append_hardline)
+
+; allow one blank line before statement except when previous statement is extends_statement
+; because we force one empty line after it in another rule
+; we are using @append_space capture name here because topiary currently does not allow for custom capture names
+; TODO: find a better way to allow blank line only if previous sibling is not an extends_statement
+; this increased formatting time from ~140ms to ~160ms
+; probably insert blank line in postprocess code, outside of this query
+((_) @append_space (#not-match? @append_space "^extends")
+ .
+ [(return_statement)
+  (pass_statement)
+  (breakpoint_statement)
+  (break_statement)
+  (continue_statement)
+  (tool_statement)
+  (enum_definition)
+  (const_statement)
+  (signal_statement)
+  (variable_statement)
+  (expression_statement)
+  (if_statement)
+  (elif_clause)
+  (else_clause)
+  (for_statement)
+  (while_statement)
+  (match_statement)] @allow_blank_line_before)
 
 ; tree-sitter parses @tool statement as an annotation node for some reason instead of tool_statement
 (source . (annotation) @append_hardline)
