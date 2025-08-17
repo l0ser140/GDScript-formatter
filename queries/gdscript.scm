@@ -5,7 +5,8 @@
 [
   "class_name" "extends" "var" "func" "class"
   "if" "elif" "else" "for" "while"
-  "const" "return" "match" "signal" "enum"]
+  "const" "return" "match" "signal" "enum"
+  (static_keyword)]
 @append_space
 
 ; Preserve comments and strings as they are
