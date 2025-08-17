@@ -4,3 +4,4 @@ func foo():
 	a = [1 + 2 + 3]
 	a = (1 + 2)
 	a = (1 | 2 | 3)
+	a = false && true

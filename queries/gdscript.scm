@@ -86,7 +86,7 @@
   [
     "+" "-" "*" "/" "%" "**"
     "==" "!=" "<" ">" "<=" ">=" "and"
-    "or" "in" "is"]
+    "or" "in" "is" "&&" "||"]
   @prepend_input_softline @append_input_softline)
 
 
