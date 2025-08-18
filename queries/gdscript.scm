@@ -6,6 +6,8 @@
   "class_name" "extends" "var" "func" "class"
   "if" "elif" "else" "for" "while"
   "const" "return" "match" "signal" "enum"
+  "await" "remote" "master" "puppet" "remotesync"
+  "mastersync" "puppetsync"
   (static_keyword)]
 @append_space
 
