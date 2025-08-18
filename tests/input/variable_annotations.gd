@@ -1,2 +1,4 @@
 @export var max_health:=5
 @onready var health:=max_health
+@onready
+var health:=max_health

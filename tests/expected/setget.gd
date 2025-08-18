@@ -4,3 +4,13 @@ var a: float = 10.0:
 	get:
 		return a
 var second: int = 10
+
+var b: float = 10.0:
+	set(value):
+		b = value
+		print(123)
+		pass
+	get:
+		print(123)
+		pass
+		return b

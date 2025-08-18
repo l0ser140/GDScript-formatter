@@ -122,7 +122,7 @@
 
 ; Make sure the body of control structures is indented (the preprended and
 ; appended indents target the body)
-(body) @prepend_indent_start @append_indent_end
+((body) @prepend_indent_start @append_indent_end)
 
 ([(return_statement)
   (pass_statement)
@@ -140,7 +140,8 @@
   (else_clause)
   (for_statement)
   (while_statement)
-  (match_statement)] @append_hardline)
+  (match_statement)
+  (comment)] @append_empty_softline)
 
 ; allow one blank line before statement except when previous statement is extends_statement
 ; because we force one empty line after it in another rule
@@ -177,8 +178,8 @@
 ; why body node in set_body/get_body not getting new indent even though we added indent to all body node?
 (set_body ":" @prepend_antispace @append_hardline @append_indent_start)
 (get_body ":" @prepend_antispace @append_hardline @append_indent_start)
-(set_body) @append_indent_end
-(get_body) @append_indent_end
+((set_body) @append_hardline @append_indent_end)
+((get_body) @append_hardline @append_indent_end)
 
 (match_statement ":" @prepend_antispace @append_hardline)
 (match_body) @prepend_indent_start @append_indent_end
@@ -196,3 +197,8 @@
  "(" @append_input_softline @append_indent_start
  ")" @prepend_input_softline @prepend_indent_end
  (#multi_line_only!))
+
+; LAMBDA
+(lambda ":" @append_space (#single_line_only!))
+(lambda ":" @append_hardline (#multi_line_only!))
+(lambda (parameters "(" @prepend_antispace))
