@@ -12,7 +12,7 @@
 @append_space
 
 ; Preserve comments and strings as they are
-(comment) @leaf @append_hardline
+(comment) @leaf
 (string) @leaf
 
 ; TYPE ANNOTATION SPACING
@@ -119,14 +119,16 @@
 (if_statement ":" @prepend_antispace @append_hardline)
 (elif_clause ":" @prepend_antispace @append_hardline)
 (else_clause ":" @prepend_antispace @append_hardline)
-(for_statement ":" @prepend_antispace @append_hardline)
+(for_statement "in" ":" @prepend_antispace @append_hardline)
 (while_statement ":" @prepend_antispace @append_hardline)
+
+((identifier) . ":" @append_space . (type))
 
 ; Make sure the body of control structures is indented (the preprended and
 ; appended indents target the body)
 ((body) @prepend_indent_start @append_indent_end)
 
-([(return_statement)
+[(return_statement)
   (pass_statement)
   (breakpoint_statement)
   (break_statement)
@@ -143,7 +145,7 @@
   (for_statement)
   (while_statement)
   (match_statement)
-  (comment)] @append_empty_softline)
+  (comment)] @append_empty_softline
 
 ; allow one blank line before statement except when previous statement is extends_statement
 ; because we force one empty line after it in another rule
@@ -196,6 +198,7 @@
 (parenthesized_expression (conditional_expression ("else") @prepend_input_softline))
 (conditional_expression (conditional_expression ("else") @prepend_input_softline))
 
+(parenthesized_expression "(" @append_antispace)
 (parenthesized_expression
  "(" @append_input_softline @append_indent_start
  ")" @prepend_input_softline @prepend_indent_end
