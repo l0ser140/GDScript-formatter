@@ -168,7 +168,8 @@
   (for_statement)
   (while_statement)
   (match_statement)
-  (comment)] @allow_blank_line_before)
+  (comment)
+  (annotation)] @allow_blank_line_before)
 
 ; tree-sitter parses @tool statement as an annotation node for some reason instead of tool_statement
 (source . (annotation) @append_hardline)
@@ -202,3 +203,10 @@
 (lambda ":" @append_space (#single_line_only!))
 (lambda ":" @append_hardline (#multi_line_only!))
 (lambda (parameters "(" @prepend_antispace))
+
+; ANNOTATIONS
+; we again are using @append_space capture name, but this time we
+; need to make sure to not add additional space between identifier and open paren
+((annotation (identifier) @append_space) @append_empty_softline (#not-match? @append_space "^(onready|export)$"))
+(annotation (arguments "(" @prepend_antispace))
+(function_definition (annotations (annotation) @append_hardline))
