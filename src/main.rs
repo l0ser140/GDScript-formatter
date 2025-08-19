@@ -6,7 +6,7 @@ use std::{
 
 use clap::Parser;
 
-use gdscript_formatter::format_gdscript;
+use gdscript_formatter::{formatter::format_gdscript_with_config, FormatterConfig};
 
 #[derive(Parser)]
 #[clap(
@@ -25,6 +25,14 @@ struct Args {
     output: Option<PathBuf>,
     #[arg(short, long, help = "Check if file is formatted (exit code 1 if not)")]
     check: bool,
+    #[arg(long, help = "Use spaces for indentation")]
+    use_spaces: bool,
+    #[arg(
+        long,
+        help = "Number of space to use as indentation when --use-space is present",
+        default_value = "4"
+    )]
+    indent_size: usize,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -42,7 +50,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
-    let formatted_content = format_gdscript(&input_content)?;
+    let config = FormatterConfig {
+        indent_size: args.indent_size,
+        use_spaces: args.use_spaces,
+    };
+
+    let formatted_content = format_gdscript_with_config(&input_content, &config)?;
 
     if args.check {
         if input_content != formatted_content {

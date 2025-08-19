@@ -14,10 +14,10 @@ pub fn format_gdscript_with_config(
 ) -> Result<String, Box<dyn std::error::Error>> {
     let query = include_str!("../queries/gdscript.scm");
 
-    let indent_string = if config.use_tabs {
-        "\t".to_string()
-    } else {
+    let indent_string = if config.use_spaces {
         " ".repeat(config.indent_size)
+    } else {
+        "\t".to_string()
     };
 
     let language: Language = Language {
