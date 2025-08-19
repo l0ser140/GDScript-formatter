@@ -28,11 +28,12 @@ pub fn format_gdscript_with_config(
     };
 
     let mut input = content.as_bytes();
-    let mut output = BufWriter::new(Vec::new());
+    let mut output = Vec::new();
+    let mut writer = BufWriter::new(&mut output);
 
     let formatter_result = formatter(
         &mut input,
-        &mut output,
+        &mut writer,
         &language,
         Operation::Format {
             skip_idempotence: true,
@@ -44,8 +45,9 @@ pub fn format_gdscript_with_config(
         return Err(format!("Topiary formatting failed: {}", formatter_error).into());
     }
 
-    // TODO: is it possible to remove additional heap allocation here?
-    let formatted_content = String::from_utf8(output.buffer().to_vec())
+    drop(writer);
+
+    let formatted_content = String::from_utf8(output)
         .map_err(|e| format!("Failed to parse topiary output as UTF-8: {}", e))?;
 
     Ok(formatted_content)
