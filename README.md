@@ -8,24 +8,28 @@ The goal of this project is to provide a simple and fast GDScript code formatter
 
 ## Status
 
-**Work in progress** - 07/07/2025 - The formatter works but it's far from perfect. It has some formatting rules implemented, including:
+**Ready for testing** - 08/19/2024 - The formatter now has many formatting rules implemented and is ready to test. It includes:
 
-- **Spaces**: leaving one space consistently between many operators, a number of keywords, or after commas in function calls, arrays, and dictionaries
+- **Spaces**: leaving one space consistently between many operators, most keywords, or after commas in function calls, arrays, and dictionaries
 - **Multi-line structures**: simple arrays and dictionaries can be wrapped on one or multiple lines with indentation
-- **Indentation**: consistent indentation for blocks, function definitions, and control structures
+- **Indentation**: consistent indentation for blocks, function definitions, and control structures with configurable indent types (tabs or spaces)
+- **Vertical spacing**: proper blank lines between functions, classes, and other major code structures
+
+And more!
 
 *In this system, every rule needs to be written explicitly, including putting a space between different keywords, operators, and punctuation. The formatter doesn't automatically add spaces or indentation unless it's explicitly defined in the rules.*
 
+*So we need you to share any code snippets for things that don't work yet. Also, note that GDScript features in beta/development versions of Godot may not be supported.*
+
 **Next steps**:
 
-- Implement correct vertical spacing (blank lines between functions, classes, after the extends statement, etc.)
-- Ensure idempotence (running the formatter more than once should not change the output code for all the features it supports)
+- Gathering feedback from testing and improving the formatter based on real-world needs
 
 **Technology limitations**:
 
 Topiary doesn't handle maximum line length. Instead, for wrapping code on a single or multiple lines, it uses cues from you: if an array is on a single line, it will remain on a single line, and if it is at least on two lines, Topiary will wrap it on multiple lines.
 
-It's always possible to implement a maximum line length as a post-processing step by using Topiary as a library and then running a custom function to wrap lines that are too long. This isn't planned yet, but it is possible.
+It's always possible to implement a maximum line length as a post-processing step by using Topiary as a library and then running a custom function to wrap lines that are too long. This isn't planned yet, but it is technically possible.
 
 ## Contributing
 
