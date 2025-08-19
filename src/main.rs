@@ -1,41 +1,46 @@
-use clap::{Arg, Command};
-use gdscript_formatter::format_gdscript;
-use std::fs;
-use std::io::{self, Read};
-use std::path::PathBuf;
+use std::{
+    fs,
+    io::{self, Read},
+    path::PathBuf,
+};
+
+use clap::Parser;
+
+use gdscript_formatter::{formatter::format_gdscript_with_config, FormatterConfig};
+
+#[derive(Parser)]
+#[clap(
+    about = "A GDScript code formatter using Topiary and Tree-sitter",
+    version = "0.1.0"
+)]
+struct Args {
+    #[arg(help = "Input GDScript file to format", value_name = "FILE")]
+    input: Option<PathBuf>,
+    #[arg(
+        short,
+        long,
+        help = "Output file (default: stdout)",
+        value_name = "FILE"
+    )]
+    output: Option<PathBuf>,
+    #[arg(short, long, help = "Check if file is formatted (exit code 1 if not)")]
+    check: bool,
+    #[arg(long, help = "Use spaces for indentation")]
+    use_spaces: bool,
+    #[arg(
+        long,
+        help = "Number of space to use as indentation when --use-space is present",
+        default_value = "4"
+    )]
+    indent_size: usize,
+}
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let matches = Command::new("gdscript-formatter")
-        .version("0.1.0")
-        .about("A GDScript code formatter using Topiary and Tree-sitter")
-        .arg(
-            Arg::new("input")
-                .help("Input GDScript file to format")
-                .value_name("FILE")
-                .index(1),
-        )
-        .arg(
-            Arg::new("output")
-                .short('o')
-                .long("output")
-                .help("Output file (default: stdout)")
-                .value_name("FILE"),
-        )
-        .arg(
-            Arg::new("check")
-                .short('c')
-                .long("check")
-                .help("Check if file is formatted (exit code 1 if not)")
-                .action(clap::ArgAction::SetTrue),
-        )
-        .get_matches();
+    let args = Args::parse();
 
-    let input_content = match matches.get_one::<String>("input") {
-        Some(file_path) => {
-            let path = PathBuf::from(file_path);
-            fs::read_to_string(&path)
-                .map_err(|e| format!("Failed to read file {}: {}", path.display(), e))?
-        }
+    let input_content = match args.input {
+        Some(file_path) => fs::read_to_string(&file_path)
+            .map_err(|e| format!("Failed to read file {}: {}", file_path.display(), e))?,
         None => {
             let mut buffer = String::new();
             io::stdin()
@@ -45,19 +50,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
-    let formatted_content = format_gdscript(&input_content)?;
+    let config = FormatterConfig {
+        indent_size: args.indent_size,
+        use_spaces: args.use_spaces,
+    };
 
-    if matches.get_flag("check") {
+    let formatted_content = format_gdscript_with_config(&input_content, &config)?;
+
+    if args.check {
         if input_content != formatted_content {
             eprintln!("File is not formatted");
             std::process::exit(1);
         }
         println!("File is formatted");
     } else {
-        match matches.get_one::<String>("output") {
+        match args.output {
             Some(output_file) => {
-                fs::write(output_file, formatted_content)
-                    .map_err(|e| format!("Failed to write to file {}: {}", output_file, e))?;
+                fs::write(&output_file, formatted_content).map_err(|e| {
+                    format!("Failed to write to file {}: {}", output_file.display(), e)
+                })?;
             }
             None => {
                 print!("{}", formatted_content);
