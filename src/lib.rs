@@ -11,7 +11,7 @@ impl Default for FormatterConfig {
     fn default() -> Self {
         Self {
             indent_size: 4,
-            use_tabs: false,
+            use_tabs: true,
         }
     }
 }

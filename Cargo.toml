@@ -9,6 +9,8 @@ repository = "https://github.com/gdquest/gdscript-formatter"
 [dependencies]
 anyhow = "1.0"
 clap = { version = "4.0", features = ["derive"] }
+topiary-core = "0.6"
+tree-sitter-gdscript = "5.0.1"
 
 
 [dev-dependencies]
