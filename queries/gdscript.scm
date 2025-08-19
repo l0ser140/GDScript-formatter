@@ -5,11 +5,14 @@
 [
   "class_name" "extends" "var" "func" "class"
   "if" "elif" "else" "for" "while"
-  "const" "return" "match"
-] @append_space
+  "const" "return" "match" "signal" "enum"
+  "await" "remote" "master" "puppet" "remotesync"
+  "mastersync" "puppetsync"
+  (static_keyword)]
+@append_space
 
 ; Preserve comments and strings as they are
-(comment) @leaf @append_hardline
+(comment) @leaf
 (string) @leaf
 
 ; TYPE ANNOTATION SPACING
@@ -17,36 +20,35 @@
 (typed_default_parameter ":" @append_space)
 (variable_statement ":" @append_space)
 
-; PARAMETER SPACING
-(parameters "," @append_space)
-
-; ARRAY AND DICTIONARY FORMATTING
+; ARRAY AND DICTIONARY
 ; If the array is on a single line, only insert spaces between values. If it's
 ; multi-line, format it with new lines.
 (array
   "[" @append_empty_softline @append_indent_start
-  "]" @prepend_empty_softline @append_empty_softline @prepend_indent_end
-)
-(array "," @append_spaced_softline)
+  "]" @prepend_empty_softline @append_empty_softline @prepend_indent_end)
 
+(array "," @append_spaced_softline)
 (dictionary
   "{" @append_empty_softline @append_indent_start
-  "}" @prepend_empty_softline @append_empty_softline @prepend_indent_end
-)
+  "}" @prepend_empty_softline @append_empty_softline @prepend_indent_end)
+
 (dictionary "," @append_spaced_softline)
 (pair ":" @append_space)
 
-
 ; FUNCTIONS
-(arguments "," @append_space)
-"->" @prepend_space @append_space
-(class_name_statement) @append_space
-(annotation) @append_space
-
 (function_definition (name) @append_antispace)
 (function_definition ":" @append_hardline)
+(arguments "," @append_space)
+"->" @prepend_space @append_space
+(parameters "," @append_space)
 
+; CLASS DEFINITIONS
 (class_definition ":" @append_hardline)
+(class_name_statement) @append_space
+(source
+    (extends_statement) @append_delimiter @append_hardline
+    (#delimiter! "\n"))
+(extends_statement) @prepend_space
 
 ; EMPTY LINES BETWEEN DEFINITIONS
 ;
@@ -55,91 +57,152 @@
 ; matching a series of indirect siblings like e.g. variable + class + ... +
 ; function)
 (source
-    (variable_statement) @append_delimiter
+    [(variable_statement) (function_definition) (class_definition) (signal_statement) (const_statement) (enum_definition) (constructor_definition)] @append_delimiter
     .
-    (function_definition)
-    (#delimiter! "\n\n")
-)
-(source
-    (function_definition) @append_delimiter
-    .
-    (function_definition)
-    (#delimiter! "\n\n")
-)
-(source
-    (function_definition) @append_delimiter
-    .
-    (class_definition)
-    (#delimiter! "\n\n")
-)
-(source
-    (class_definition) @append_delimiter
-    .
-    (function_definition)
-    (#delimiter! "\n\n")
-)
+    [(function_definition) (constructor_definition) (class_definition)]
+    (#delimiter! "\n\n"))
 
+; CONST DEFINITIONS
+(const_statement ":" @append_space)
 
-(class_definition) @append_hardline
-(source
-    (extends_statement) @append_delimiter
-    (#delimiter! "\n\n")
-)
+; ENUMS
+(enumerator_list
+  "{" @append_input_softline @append_indent_start
+  "}" @prepend_input_softline @prepend_indent_end)
+(enumerator_list "," @append_spaced_softline)
+(enumerator_list) @prepend_space
 
-(class_definition
-  (body) @prepend_indent_start @append_indent_end
-)
-(function_definition
-  (body) @prepend_indent_start @append_indent_end
-)
-(variable_statement) @append_hardline
+; CONSTRUCTORS
+(constructor_definition ":" @append_hardline)
 
+; OPERATORS
 ; Allow line breaks around binary operators for long expressions
 ; This means that if the programmer has a long expression, they can break it up by wrapping something on a line
 (binary_operator
   [
     "+" "-" "*" "/" "%" "**"
     "==" "!=" "<" ">" "<=" ">=" "and"
-    "or" "in" "is"
-  ] @prepend_spaced_softline @append_spaced_softline
-)
-
-; OPERATORS
-; Calculation operators (restrict to binary operator context to avoid added spaces in other contexts)
-(binary_operator [
-    "+" "-" "*" "/" "%" "**"
-]) @prepend_space @append_space
+    "or" "in" "is" "&&" "||"]
+  @prepend_input_softline @append_input_softline)
 ; Comparison operators
 [
     "==" "!=" "<" ">" "<=" ">="
-    "and" "or" "in" "is"
-] @prepend_space @append_space
+    "and" "or" "in" "is"]
+@prepend_space @append_space
 ; not can be at the start of an expression, so we handle it separately - needs another query for the case "is not"
 "not" @append_space
 ; Bitwise operators
 [
-  "&" "|" "^" "<<" ">>"
-] @prepend_space @append_space
+  "&" "|" "^" "<<" ">>"]
+@prepend_space @append_space
 ; ~ is generally right next to the variable it operates on, so we don't add a space before it
 "~" @append_space
 [
-    "=" ":=" "+=" "-=" "*=" "/=" "%=" "**=" "&=" "|=" "^=" "<<=" ">>="
-] @prepend_space @append_space
+    "=" ":=" "+=" "-=" "*=" "/=" "%=" "**=" "&=" "|=" "^=" "<<=" ">>="]
+@prepend_space @append_space
 
 ; CONTROL FLOW FORMATTING
 ; Colons in control structures - remove space before colon
 (if_statement ":" @prepend_antispace @append_hardline)
 (elif_clause ":" @prepend_antispace @append_hardline)
 (else_clause ":" @prepend_antispace @append_hardline)
-(for_statement ":" @prepend_antispace @append_hardline)
+(for_statement "in" ":" @prepend_antispace @append_hardline)
 (while_statement ":" @prepend_antispace @append_hardline)
+
+((identifier) . ":" @append_space . (type))
 
 ; Make sure the body of control structures is indented (the preprended and
 ; appended indents target the body)
-(if_statement (body) @prepend_indent_start @append_indent_end)
-(elif_clause (body) @prepend_indent_start @append_indent_end)
-(else_clause (body) @prepend_indent_start @append_indent_end)
-(for_statement (body) @prepend_indent_start @append_indent_end)
-(while_statement (body) @prepend_indent_start @append_indent_end)
+((body) @prepend_indent_start @append_indent_end)
 
-(expression_statement) @append_hardline
+([(return_statement)
+  (pass_statement)
+  (breakpoint_statement)
+  (break_statement)
+  (continue_statement)
+  (tool_statement)
+  (enum_definition)
+  (const_statement)
+  (signal_statement)
+  (variable_statement)
+  (expression_statement)
+  (if_statement)
+  (elif_clause)
+  (else_clause)
+  (for_statement)
+  (while_statement)
+  (match_statement)] @append_empty_softline
+ . (comment)? @do_nothing)
+
+(comment) @append_empty_softline @prepend_input_softline
+
+; allow one blank line before statement except when previous statement is extends_statement
+; because we force one empty line after it in another rule
+; we are using @append_space capture name here because topiary currently does not allow for custom capture names
+; TODO: find a better way to allow blank line only if previous sibling is not an extends_statement
+; this increased formatting time from ~140ms to ~160ms
+; probably insert blank line in postprocess code, outside of this query
+((_) @append_space (#not-match? @append_space "^extends")
+ .
+ [(return_statement)
+  (pass_statement)
+  (breakpoint_statement)
+  (break_statement)
+  (continue_statement)
+  (tool_statement)
+  (enum_definition)
+  (const_statement)
+  (signal_statement)
+  (variable_statement)
+  (expression_statement)
+  (if_statement)
+  (elif_clause)
+  (else_clause)
+  (for_statement)
+  (while_statement)
+  (match_statement)
+  (comment)
+  (annotation)] @allow_blank_line_before)
+
+; tree-sitter parses @tool statement as an annotation node for some reason instead of tool_statement
+(source . (annotation) @append_hardline)
+
+(setget) @prepend_indent_start @append_indent_end
+(setget ":" @prepend_antispace @append_hardline)
+; why body node in set_body/get_body not getting new indent even though we added indent to all body node?
+(set_body ":" @prepend_antispace @append_hardline @append_indent_start)
+(get_body ":" @prepend_antispace @append_hardline @append_indent_start)
+((set_body) @append_hardline @append_indent_end)
+((get_body) @append_hardline @append_indent_end)
+
+(match_statement ":" @prepend_antispace @append_hardline)
+(match_body) @prepend_indent_start @append_indent_end
+(pattern_section ":" @prepend_antispace @append_hardline)
+(pattern_section "," @prepend_antispace @append_space)
+
+; This is for ternary expressions, e.g. `a if b else c`
+(conditional_expression [("if") ("else")] @prepend_space @append_space)
+(parenthesized_expression (conditional_expression ("else") @prepend_input_softline))
+(conditional_expression (conditional_expression ("else") @prepend_input_softline))
+
+(parenthesized_expression "(" @append_antispace)
+(parenthesized_expression
+ "(" @append_input_softline @append_indent_start
+ ")" @prepend_input_softline @prepend_indent_end
+ (#multi_line_only!))
+
+; LAMBDA
+(lambda ":" @append_space (#single_line_only!))
+(lambda ":" @append_hardline (#multi_line_only!))
+(lambda (parameters "(" @prepend_antispace))
+
+; ANNOTATIONS
+; we again are using @append_space capture name, but this time we
+; need to make sure to not add additional space between identifier and open paren
+(annotation) @append_space
+((annotation (identifier) @append_space) @append_empty_softline (#not-match? @append_space "^(onready|export)$"))
+(annotation (arguments "(" @prepend_antispace))
+(function_definition (annotations (annotation) @append_hardline))
+
+; For now we remove semicolons and not handle them
+(";") @delete
