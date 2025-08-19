@@ -20,10 +20,7 @@
 (typed_default_parameter ":" @append_space)
 (variable_statement ":" @append_space)
 
-; PARAMETER SPACING
-(parameters "," @append_space)
-
-; ARRAY AND DICTIONARY FORMATTING
+; ARRAY AND DICTIONARY
 ; If the array is on a single line, only insert spaces between values. If it's
 ; multi-line, format it with new lines.
 (array
@@ -31,7 +28,6 @@
   "]" @prepend_empty_softline @append_empty_softline @prepend_indent_end)
 
 (array "," @append_spaced_softline)
-
 (dictionary
   "{" @append_empty_softline @append_indent_start
   "}" @prepend_empty_softline @append_empty_softline @prepend_indent_end)
@@ -39,17 +35,15 @@
 (dictionary "," @append_spaced_softline)
 (pair ":" @append_space)
 
-
 ; FUNCTIONS
-(arguments "," @append_space)
-"->" @prepend_space @append_space
-(annotation) @append_space
-
 (function_definition (name) @append_antispace)
 (function_definition ":" @append_hardline)
+(arguments "," @append_space)
+"->" @prepend_space @append_space
+(parameters "," @append_space)
 
+; CLASS DEFINITIONS
 (class_definition ":" @append_hardline)
-
 (class_name_statement) @append_space
 (source
     (extends_statement) @append_delimiter @append_hardline
@@ -81,7 +75,7 @@
 ; CONSTRUCTORS
 (constructor_definition ":" @append_hardline)
 
-
+; OPERATORS
 ; Allow line breaks around binary operators for long expressions
 ; This means that if the programmer has a long expression, they can break it up by wrapping something on a line
 (binary_operator
@@ -90,13 +84,6 @@
     "==" "!=" "<" ">" "<=" ">=" "and"
     "or" "in" "is" "&&" "||"]
   @prepend_input_softline @append_input_softline)
-
-
-; OPERATORS
-; Calculation operators (restrict to binary operator context to avoid added spaces in other contexts)
-; (binary_operator [
-;                   "+" "-" "*" "/" "%" "**"])
-; @prepend_space @append_space
 ; Comparison operators
 [
     "==" "!=" "<" ">" "<=" ">="
@@ -193,9 +180,7 @@
 (pattern_section ":" @prepend_antispace @append_hardline)
 (pattern_section "," @prepend_antispace @append_space)
 
-; not sure if something except statemenent ending uses semicolon in gdscript
-(";") @delete
-
+; This is for ternary expressions, e.g. `a if b else c`
 (conditional_expression [("if") ("else")] @prepend_space @append_space)
 (parenthesized_expression (conditional_expression ("else") @prepend_input_softline))
 (conditional_expression (conditional_expression ("else") @prepend_input_softline))
@@ -214,6 +199,10 @@
 ; ANNOTATIONS
 ; we again are using @append_space capture name, but this time we
 ; need to make sure to not add additional space between identifier and open paren
+(annotation) @append_space
 ((annotation (identifier) @append_space) @append_empty_softline (#not-match? @append_space "^(onready|export)$"))
 (annotation (arguments "(" @prepend_antispace))
 (function_definition (annotations (annotation) @append_hardline))
+
+; For now we remove semicolons and not handle them
+(";") @delete
