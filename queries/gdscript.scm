@@ -128,7 +128,7 @@
 ; appended indents target the body)
 ((body) @prepend_indent_start @append_indent_end)
 
-[(return_statement)
+([(return_statement)
   (pass_statement)
   (breakpoint_statement)
   (break_statement)
@@ -144,8 +144,10 @@
   (else_clause)
   (for_statement)
   (while_statement)
-  (match_statement)
-  (comment)] @append_empty_softline
+  (match_statement)] @append_empty_softline
+ . (comment)? @do_nothing)
+
+(comment) @append_empty_softline @prepend_input_softline
 
 ; allow one blank line before statement except when previous statement is extends_statement
 ; because we force one empty line after it in another rule
