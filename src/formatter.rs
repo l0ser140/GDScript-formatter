@@ -79,7 +79,7 @@ fn remove_newlines_after_extends_statement(mut content: String) -> String {
     .build()
     .expect("regex should compile");
     content = re
-        .replace_all(&content, "$extends_line$extends_name\n")
+        .replace(&content, "$extends_line$extends_name\n")
         .to_string();
     content
 }
