@@ -16,3 +16,12 @@ class_name MyNode extends Node
 class_name MyNode extends Node
 
 # comment
+class_name MyNode extends "res:/path.gd"
+
+var a = 10
+class_name MyNode extends "res:/path.gd"
+
+var a = 10
+class_name MyNode extends "res:/path.gd"
+
+var a = 10

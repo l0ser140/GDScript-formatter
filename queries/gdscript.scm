@@ -136,15 +136,8 @@
 
 (comment) @append_empty_softline @prepend_input_softline
 
-; allow one blank line before statement except when previous statement is extends_statement
-; because we force one empty line after it in another rule
-; we are using @append_space capture name here because topiary currently does not allow for custom capture names
-; TODO: find a better way to allow blank line only if previous sibling is not an extends_statement
-; this increased formatting time from ~140ms to ~160ms
-; probably insert blank line in postprocess code, outside of this query
-((_) @append_space (#not-match? @append_space "^extends")
- .
- [(return_statement)
+; Allow one blank line before following statements
+([(return_statement)
   (pass_statement)
   (breakpoint_statement)
   (break_statement)
