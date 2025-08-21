@@ -1,0 +1,104 @@
+name: Release
+
+on:
+  push:
+    tags: ["*.*.*"]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-and-release:
+    name: Build and release
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            name: gdscript-formatter-linux-x86_64
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+            name: gdscript-formatter-linux-aarch64
+          - target: x86_64-apple-darwin
+            os: macos-latest
+            name: gdscript-formatter-macos-x86_64
+          - target: aarch64-apple-darwin
+            os: macos-latest
+            name: gdscript-formatter-macos-aarch64
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            name: gdscript-formatter-windows-x86_64.exe
+          - target: aarch64-pc-windows-msvc
+            os: windows-latest
+            name: gdscript-formatter-windows-aarch64.exe
+
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      # This is a tool that should cache the Rust dependencies and improve build times.
+      - name: Setup cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      # This is a toolchain to build cross-platform binaries with rust. We use
+      # it for other architectures and OSes than the build runner's.
+      - name: Install cross
+        if: matrix.os == 'ubuntu-latest' && matrix.target != 'x86_64-unknown-linux-gnu'
+        run: cargo install cross --git https://github.com/cross-rs/cross
+
+      # Build either with cross or cargo, depending on the target.
+      - name: Build binary
+        run: |
+          if [[ "${{ matrix.os }}" == "ubuntu-latest" && "${{ matrix.target }}" != "x86_64-unknown-linux-gnu" ]]; then
+            cross build --verbose --locked --release --target ${{ matrix.target }}
+          else
+            cargo build --verbose --locked --release --target ${{ matrix.target }}
+          fi
+        shell: bash
+
+      # This program makes the executable smaller by stripping debug symbols (on macOS and Linux at least).
+      - name: Strip binary (Linux and macOS)
+        if: matrix.os != 'windows-latest'
+        run: strip target/${{ matrix.target }}/release/gdscript-formatter
+
+      - name: Move and rename binary
+        run: |
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            mv target/${{ matrix.target }}/release/gdscript-formatter.exe ${{ matrix.name }}
+          else
+            mv target/${{ matrix.target }}/release/gdscript-formatter ${{ matrix.name }}
+          fi
+        shell: bash
+
+      - name: Compress (Linux and macOS)
+        if: matrix.os != 'windows-latest'
+        run: tar -czf ${{ matrix.name }}.tar.gz ${{ matrix.name }}
+
+      - name: Compress (Windows)
+        if: matrix.os == 'windows-latest'
+        run: 7z a ${{ matrix.name }}.zip ${{ matrix.name }}
+
+      - name: Create/Update Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: GDScript formatter ${{ github.ref_name }}
+          body: |
+            A fast code formatter for GDScript in Godot 4.
+          files: |
+            *.tar.gz
+            *.zip
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
