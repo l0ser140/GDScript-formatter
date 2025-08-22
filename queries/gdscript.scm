@@ -83,10 +83,10 @@
     "==" "!=" "<" ">" "<=" ">=" "and"
     "or" "in" "is" "&&" "||"]
   @prepend_input_softline @append_input_softline)
-; Comparison operators
+; Comparison operators (+ "as" keyword which needs the same spacing)
 [
     "==" "!=" "<" ">" "<=" ">="
-    "and" "or" "in" "is"]
+    "and" "or" "in" "is" "as"]
 @prepend_space @append_space
 ; not can be at the start of an expression, so we handle it separately - needs another query for the case "is not"
 "not" @append_space
