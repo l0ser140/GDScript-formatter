@@ -2,6 +2,19 @@
 
 This file documents the changes made to the formatter with each release. This project uses [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
+## Release 0.2.0 (2025-08-23)
+
+### Added
+
+- Support for multi-line wrapping of function parameters with extra indentation
+- Spacing around the "as" keyword
+
+### Changed
+
+- Formatter now overwrites formatted files by default instead of outputting to stdout
+- Added option to output to stdout when needed
+- Version number is now read directly from Cargo.toml at build time
+
 ## Release 0.1.0 (2025-08-21)
 
 This is the initial release of the GDScript formatter.
