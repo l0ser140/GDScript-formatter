@@ -53,13 +53,6 @@ To add new formatting rules to the GDScript formatter, you can follow these step
 
 **Important**: we will likely not be able to implement all the guidelines from the official style guide with this formatter. What we gain in ease of implementation and maintenance, we lose in flexibility and advanced patterns.
 
-### Current development priorities
-
-- **Complete the basics**: Review and ensure the basic formatting rules (spaces etc.) cover the most common GDScript code patterns
-- **Vertical Spacing**: Implement consistent blank lines between functions and classes
-- **Idempotence**: Ensure formatter produces identical output when run multiple times
-- **Edge Cases**: Handle complex nested structures and edge cases
-
 ## Project structure
 
 Here are the most important directories and files in the project:
