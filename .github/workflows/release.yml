@@ -68,8 +68,9 @@ jobs:
         shell: bash
 
       # This program makes the executable smaller by stripping debug symbols (on macOS and Linux at least).
+      # Skipping on Linux Aarch64 because strip fails to recognize the format.
       - name: Strip binary (Linux and macOS)
-        if: matrix.os != 'windows-latest'
+        if: matrix.os != 'windows-latest' && matrix.target != 'aarch64-unknown-linux-gnu'
         run: strip target/${{ matrix.target }}/release/gdscript-formatter
 
       - name: Move and rename binary
