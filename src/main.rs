@@ -11,7 +11,8 @@ use gdscript_formatter::{formatter::format_gdscript_with_config, FormatterConfig
 #[derive(Parser)]
 #[clap(
     about = "A GDScript code formatter using Topiary and Tree-sitter",
-    version = "0.1.0",
+    // Use the version number directly from Cargo.toml at compile time
+    version = env!("CARGO_PKG_VERSION"),
     long_about = "Format GDScript files with consistent style and indentation. \
     By default, the formatter overwrites input files with the formatted code. \
     Use --stdout to output to standard output instead."
