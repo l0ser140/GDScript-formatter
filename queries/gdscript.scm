@@ -41,6 +41,14 @@
 (arguments "," @append_space)
 "->" @prepend_space @append_space
 (parameters "," @append_space)
+; MULTI-LINE PARAMETERS
+(parameters
+    "(" @append_hardline @append_indent_start
+    ")" @prepend_hardline @prepend_indent_end
+    (#multi_line_only!))
+(parameters
+    ([(typed_parameter) (typed_default_parameter) (identifier) (default_parameter)]) @prepend_hardline @prepend_indent_start @append_indent_end
+    (#multi_line_only!))
 
 ; CLASS DEFINITIONS
 (class_definition ":" @append_hardline)
