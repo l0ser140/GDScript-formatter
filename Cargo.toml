@@ -26,3 +26,6 @@ gdscript = []
 [[bin]]
 name = "gdscript-formatter"
 path = "src/main.rs"
+
+[profile.release]
+strip = true
