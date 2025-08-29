@@ -73,6 +73,9 @@ fn preprocess(content: &str) -> String {
 /// to clean up/balance out the output.
 fn postprocess(mut content: String) -> String {
     content = clean_up_lines_with_only_whitespace(content);
+    if content.contains(';') {
+        content = fix_dangling_semicolons(content);
+    }
 
     content
 }
@@ -106,6 +109,18 @@ fn clean_up_lines_with_only_whitespace(mut content: String) -> String {
         .build()
         .expect("empty line regex should compile");
     content = re.replace_all(&content, "\n").to_string();
+
+    content
+}
+
+/// This function fixes semicolons that end up on their own line with indentation
+/// by moving them to the end of the previous line.
+fn fix_dangling_semicolons(mut content: String) -> String {
+    let re_trailing = RegexBuilder::new(r"\s+;$")
+        .multi_line(true)
+        .build()
+        .expect("semicolon regex should compile");
+    content = re_trailing.replace_all(&content, "").to_string();
 
     content
 }
