@@ -1,10 +1,10 @@
 use std::{
-    fs,
-    io::{self, Read},
+    env, fs,
+    io::{self, IsTerminal, Read},
     path::PathBuf,
 };
 
-use clap::Parser;
+use clap::{CommandFactory, Parser};
 
 use gdscript_formatter::{formatter::format_gdscript_with_config, FormatterConfig};
 
@@ -19,7 +19,7 @@ use gdscript_formatter::{formatter::format_gdscript_with_config, FormatterConfig
 )]
 struct Args {
     #[arg(
-        help = "Input GDScript file to format. If not provided, reads from stdin and outputs to stdout",
+        help = "Input GDScript file to format. If no file path is provided, the program reads from standard input and outputs to standard output.",
         value_name = "FILE"
     )]
     input: Option<PathBuf>,
@@ -53,6 +53,13 @@ struct Args {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // If there are no arguments and nothing piped from stdin, print the help message
+    if env::args().len() == 1 && io::stdin().is_terminal() {
+        Args::command().print_help()?;
+        println!();
+        return Ok(());
+    }
+
     let args = Args::parse();
 
     let input_content = match &args.input {
