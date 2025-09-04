@@ -2,6 +2,22 @@
 
 This file documents the changes made to the formatter with each release. This project uses [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
+## Release 0.3.0 (2025-09-04)
+
+### Added
+
+- Print the help message if there are no arguments or piped input
+
+### Fixed
+
+- Semicolons: wrap statements on multiple lines when needed, preserve indentation in code blocks
+- Inline comments after colons wrapping on another line
+
+### Changed
+
+- Make tests run much 3 to 4x faster and greatly improve output diff
+- Use cargo configuration to strip debug symbols from release binaries
+
 ## Release 0.2.0 (2025-08-23)
 
 ### Added

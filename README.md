@@ -8,7 +8,7 @@ The goal of this project is to provide a simple and fast GDScript code formatter
 
 ## Status
 
-**Ready for testing** - 08/19/2024 - The formatter now has many formatting rules implemented and is ready to test. It includes:
+Ready for daily use for commonly written code - 09/04/2025 - The formatter now has many formatting rules implemented and is ready to test. It includes:
 
 - **Spaces**: leaving one space consistently between many operators, most keywords, or after commas in function calls, arrays, and dictionaries
 - **Multi-line structures**: simple arrays and dictionaries can be wrapped on one or multiple lines with indentation
@@ -17,19 +17,42 @@ The goal of this project is to provide a simple and fast GDScript code formatter
 
 And more!
 
-*In this system, every rule needs to be written explicitly, including putting a space between different keywords, operators, and punctuation. The formatter doesn't automatically add spaces or indentation unless it's explicitly defined in the rules.*
+**Please report any issues you find with code snippets!** GDScript has grown into a complex language with many different syntax patterns. While the formatter covers many common cases, there can always be edge cases or less common syntax that may not be handled correctly yet. You can find known issues in the [GitHub issues section](issues).
 
-*So we need you to share any code snippets for things that don't work yet. Also, note that GDScript features in beta/development versions of Godot may not be supported.*
+### Formatting on single or multiple lines
 
-**Next steps**:
+The formatter's technology doesn't handle maximum line length automatically. Instead, for wrapping code on a single or multiple lines, it uses cues from you, the developer. For example, if you write an array on a single line, it will remain on a single line. This input:
 
-- Gathering feedback from testing and improving the formatter based on real-world needs
+```gdscript
+var numbers: Array[int] = [1,2,3,4,5]
+```
 
-**Technology limitations**:
+Will be formatted like this:
 
-Topiary doesn't handle maximum line length. Instead, for wrapping code on a single or multiple lines, it uses cues from you: if an array is on a single line, it will remain on a single line, and if it is at least on two lines, Topiary will wrap it on multiple lines.
+```gdscript
+var numbers: Array[int] = [1, 2, 3, 4, 5]
+```
 
-It's always possible to implement a maximum line length as a post-processing step by using Topiary as a library and then running a custom function to wrap lines that are too long. This isn't planned yet, but it is technically possible.
+If you insert a line return, the array will wrap on multiple lines instead. This input:
+
+```gdscript
+var dialogue_items: Array[String] = ["I'm learning about Arrays...",
+	"...and it is a little bit complicated.", "Let's see if I got it right: an array is a list of values!", "Did I get it right? Did I?", "Hehe! Bye bye~!"]
+```
+
+Will be formatted like this:
+
+```gdscript
+var dialogue_items: Array[String] = [
+	"I'm learning about Arrays...",
+	"...and it is a little bit complicated.",
+	"Let's see if I got it right: an array is a list of values!",
+	"Did I get it right? Did I?",
+	"Hehe! Bye bye~!"
+]
+```
+
+You can insert the line returns anywhere in the array, and the formatter will keep it on multiple lines. The same applies to other structures.
 
 ## Contributing
 
@@ -57,11 +80,11 @@ To add new formatting rules to the GDScript formatter, you can follow these step
 
 Here are the most important directories and files in the project:
 
-- `src/`: Contains the Rust code to compile and run the formatter using the CLI. It's currently a simple wrapper around the Topiary command line program, but later it could use Topiary as a library instead to pack everything into a simple binary
-- `tests/`: Contains test files for the formatter. It has input files with unformatted GDScript code and expected output files that the formatter should produce when run on the input files
-- `queries/`: Contains the Topiary formatting rules for GDScript. The `gdscript.scm` file is where you define how GDScript code should be formatted based on Tree Sitter queries and Topiary features to mark nodes/patterns for formatting
-- `config/`: Contains configuration files for Topiary - basically a small file that tells Topiary how to run the formatter for GDScript
-- `docs/`: This folder will compile images and recaps or cheat sheets with some tricks to help when working with tree sitter queries and topiary.
+- `src/`: Contains the Rust code to compile and run the formatter using the CLI. It's currently a simple wrapper around the Topiary command line program, but later it could use Topiary as a library instead to pack everything into a simple binary.
+- `tests/`: Contains test files for the formatter. It has input files with unformatted GDScript code and expected output files that the formatter should produce when run on the input files.
+- `queries/`: Contains the Topiary formatting rules for GDScript. The `gdscript.scm` file is where you define how GDScript code should be formatted based on Tree Sitter queries and Topiary features to mark nodes/patterns for formatting.
+- `config/`: Contains configuration files for Topiary - basically a small file that tells Topiary how to run the formatter for GDScript.
+- `docs/`: This folder will compile images and recaps or cheat sheets with some tricks to help when working with Tree Sitter queries and Topiary.
 
 ## Installing and running the formatter
 
