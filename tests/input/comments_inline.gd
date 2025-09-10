@@ -32,3 +32,5 @@ func foo(): # func comment
 
 	var lam = func(): # lambda comment
 		pass
+
+	return # function trailing comment at end
