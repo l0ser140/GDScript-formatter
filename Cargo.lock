@@ -870,9 +870,8 @@ dependencies = [
 
 [[package]]
 name = "tree-sitter-gdscript"
-version = "5.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fabcc1b8668a055f17d0a14e4dcdbad857b530cf9d5531206467dc39159b290b"
+version = "6.0.0"
+source = "git+https://github.com/PrestonKnopp/tree-sitter-gdscript.git?rev=d28f24a9cc482a5274d77d41918b052e72cc18f4#d28f24a9cc482a5274d77d41918b052e72cc18f4"
 dependencies = [
  "cc",
  "tree-sitter-language",

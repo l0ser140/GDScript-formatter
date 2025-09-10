@@ -170,19 +170,16 @@
   (comment)
   (annotation)] @allow_blank_line_before)
 
-; tree-sitter parses @tool statement as an annotation node for some reason instead of tool_statement
+; tree-sitter parses @tool statement as an annotation node
 (source . (annotation) @append_hardline)
 
 (setget) @prepend_indent_start @append_indent_end
 (setget ":" @prepend_antispace)
 (setget ":" @append_hardline . (comment)? @do_nothing)
-; why body node in set_body/get_body not getting new indent even though we added indent to all body node?
-(set_body ":" @prepend_antispace @append_indent_start)
-(set_body ":" @append_hardline . (comment)? @do_nothing)
-(get_body ":" @prepend_antispace @append_indent_start)
-(get_body ":" @append_hardline . (comment)? @do_nothing)
-((set_body) @append_hardline @append_indent_end)
-((get_body) @append_hardline @append_indent_end)
+(set_body ":" @prepend_antispace)
+(set_body (body) @prepend_hardline @append_hardline)
+(get_body ":" @prepend_antispace)
+(get_body (body) @prepend_hardline @append_hardline)
 
 (match_statement ":" @prepend_antispace)
 (match_body) @prepend_indent_start @append_indent_end @prepend_hardline
