@@ -2,6 +2,17 @@
 
 This file documents the changes made to the formatter with each release. This project uses [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
+## Release 0.4.0 (2025-09-10)
+
+### Fixed
+
+- Trailing comments at the end of functions were being wrapped on a new line. They're now preserved at the end of the function line.
+
+### Changed
+
+- Updated to latest version of the GDScript parser with adapted queries for new body node in setters and getters
+- Added test case for trailing comments at the end of functions to ensure correct formatting
+
 ## Release 0.3.0 (2025-09-04)
 
 ### Added
