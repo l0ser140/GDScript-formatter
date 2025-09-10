@@ -6,6 +6,22 @@ The goal of this project is to provide a simple and fast GDScript code formatter
 
 *You can learn more about the motivation behind this project in the [Motivation section](#motivation) below.*
 
+## Installing and running the formatter
+
+You can find binaries for Windows, macOS, and Linux in the [releases tab](releases) of this repository. Download the binary for your platform, unzip it, rename it to the command name you want (e.g. `gdscript-format`) and place it somewhere in your system PATH.
+
+To format a file, run:
+
+```
+gdscript-format path/to/file.gd
+```
+
+Format with check mode, to use in a build system (exit code 1 if changes needed):
+
+```bash
+gdscript-format --check path/to/file.gd
+```
+
 ## Status
 
 Ready for daily use for commonly written code - 09/04/2025 - The formatter now has many formatting rules implemented and is ready to test. It includes:
@@ -58,6 +74,16 @@ You can insert the line returns anywhere in the array, and the formatter will ke
 
 Contributions are welcome! I've compiled some guides and guidelines below to help you get started with contributing to the GDScript formatter. If you need more information or want to discuss ideas for the formatter, please get in touch on the [GDQuest Discord](https://discord.gg/87NNb3Z).
 
+### Building the formatter locally for development
+
+To build the formatter locally for testing, you need the Rust language compiler and the Rust language build system `cargo`. Then you can run:
+
+```bash
+cargo build
+```
+
+It'll download all the dependencies, compile them, and build a binary in a `target/debug/` folder. You can then run the built program with `cargo run -- [args]`.
+
 ### Adding new formatting rules
 
 To add new formatting rules to the GDScript formatter, you can follow these steps:
@@ -85,28 +111,6 @@ Here are the most important directories and files in the project:
 - `queries/`: Contains the Topiary formatting rules for GDScript. The `gdscript.scm` file is where you define how GDScript code should be formatted based on Tree Sitter queries and Topiary features to mark nodes/patterns for formatting.
 - `config/`: Contains configuration files for Topiary - basically a small file that tells Topiary how to run the formatter for GDScript.
 - `docs/`: This folder will compile images and recaps or cheat sheets with some tricks to help when working with Tree Sitter queries and Topiary.
-
-## Installing and running the formatter
-
-Install Topiary's command line tool: https://topiary.tweag.io/book/getting-started/installation/index.html
-
-Build the formatter as a program (requires the Rust language compiler, the Rust language build system `cargo`, and Topiary to be installed):
-
-```bash
-cargo build
-```
-
-Format a file:
-
-```
-cargo run -- path/to/file.gd
-```
-
-Format with check mode, to use in a build system (exit code 1 if changes needed):
-
-```bash
-cargo run -- --check path/to/file.gd
-```
 
 ### Development workflow
 
@@ -176,16 +180,22 @@ MIT
 
 ## Motivation
 
-Having an official GDScript formatter has been planned since the early days of Godot, but it has always been part of the engine's development backlog. It's a tool Godot users would use daily, so in 2022, we set out to sponsor the development of an [official GDScript formatter](https://github.com/godotengine/godot/pull/76211) built into Godot 4.
+The Godot team has wanted an official GDScript formatter since the early days, but it has always been part of the engine's development backlog. It's a tool Godot users would use daily, so in 2022, we set out to sponsor the development of an [official GDScript formatter](https://github.com/godotengine/godot/pull/76211) built into Godot 4.
 
-A lot of work went into this project from GDQuest. Then, following the suggestion to chop up the work into small chunks, a dedicated contributor, Scony, took over the project and tried breaking down the implementation [into small chunks](https://github.com/godotengine/godot/pull/97383) to make it much easier to review and merge. However, there isn't an active maintainer to review and merge the work, and the project has been stalled for a while now. The process is looking to take a long time, and we need solutions we can iterate upon quickly and use today.
+We put a lot of work into this project at GDQuest. Then, following the suggestion to break up the work into smaller contributions, a dedicated contributor, Scony, took over the project and tried breaking down the implementation [into small chunks](https://github.com/godotengine/godot/pull/97383) to make it much easier to review and merge. However, there isn't an active maintainer to review and merge the work, and the project has been stuck for a while now. The process looks like it will take a long time, and we need solutions we can work on quickly and use today.
 
-Scony has been maintaining a solid set of community tools for GDScript, including a code formatter written in Python: [Godot GDScript Toolkit](https://github.com/Scony/godot-gdscript-toolkit). It's a great project that has been used by many Godot developers. So, why start another one?
+Scony has been maintaining a solid set of community tools for GDScript, including a code formatter written in Python: [Godot GDScript Toolkit](https://github.com/Scony/godot-gdscript-toolkit). It's a great project that many Godot developers have used. So, why start another one?
 
-The main motivation to experiment with this project is that the ruleset of Scony's formatter has grown quite advanced over the years, and it has limitations for us at GDQuest that make it not work for our projects. Some of these limitations are also not easy to overcome.
+The main reason to try this project is that Scony's formatter has grown quite complex over the years, and it has limitations for us at GDQuest that make it not work for our projects. Some of these limitations are also not easy to fix.
 
-Since Scony made his great formatter, new technologies have emerged that make it much easier to implement and maintain one. Thanks to Tree Sitter and Topiary, in just a couple of hours, you can now kickstart a code formatter that can be compiled to native code and used in any code editor or IDE.
+Since Scony made his great formatter, new technologies have come up that could make it much easier to build and maintain one: Tree Sitter and Topiary. This project started as a suggestion from one of Godot's core contributors to test these new technologies for GDScript formatting. While testing it, I could get results within just a couple of hours and found it to be a very promising approach that could lead to a simple and fast formatter that's relatively easy to maintain and extend for the community.
 
-**Tree-sitter** is a powerful parser generator that makes it easy to create programming language parsers that run natively (it generates C code). It gives you a simple query language to detect patterns in the code and process them, a bit like CSS selectors (but simpler and more restricted). It's used in modern code editors for syntax highlighting, code navigation, outline, folding, and more (Zed, Neovim, Emacs, Helix, Lapce...).
+<details>
+<summary>What is Tree-sitter?</summary>
+Tree-sitter is a powerful parser generator that makes it easy to create programming language parsers that run natively (it generates C code). It gives you a simple query language to find patterns in the code and process them, a bit like CSS selectors (but simpler and more limited). It's used in modern code editors for syntax highlighting, code navigation, outline, folding, and more (Zed, Neovim, Emacs, Helix, Lapce...).
+</details>
 
-**Topiary** is a Rust library and command line program that makes it easy to implement a code formatter using a parser based on Tree Sitter. You use the Tree Sitter query language to define how the code should be formatted, and Topiary takes care of the rest.
+<details>
+<summary>What is Topiary?</summary>
+Topiary is a Rust library and command line program that makes it easy to build a code formatter using a parser based on Tree Sitter. You use the Tree Sitter query language to define how the code should be formatted, and Topiary handles the rest.
+</details>
