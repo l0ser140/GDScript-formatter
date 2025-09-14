@@ -38,10 +38,20 @@
 ; FUNCTIONS
 (function_definition (name) @append_antispace)
 (function_definition (body) @prepend_hardline)
-(arguments "," @append_space)
 "->" @prepend_space @append_space
-(parameters "," @append_space)
-; MULTI-LINE PARAMETERS
+(arguments "," @append_space (#single_line_only!))
+(parameters "," @append_space (#single_line_only!))
+
+; MULTI-LINE ARGUMENTS (in function calls)
+(arguments "," @append_hardline (#multi_line_only!))
+; uncomment for double indentation in multiline function calls
+; (arguments (_) @prepend_indent_start @append_indent_end)
+(arguments
+    "(" @append_hardline @append_indent_start
+    ")" @prepend_hardline @prepend_indent_end
+    (#multi_line_only!))
+
+; MULTI-LINE PARAMETERS (in function definitions)
 (parameters
     "(" @append_hardline @append_indent_start
     ")" @prepend_hardline @prepend_indent_end
