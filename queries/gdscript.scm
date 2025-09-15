@@ -88,7 +88,7 @@
   [
     "+" "-" "*" "/" "%" "**"
     "==" "!=" "<" ">" "<=" ">=" "and"
-    "or" "in" "is" "&&" "||"]
+    "or" "in" "is" "&&" "||" "not"]
   @prepend_input_softline @append_input_softline)
 ; Comparison operators (+ "as" keyword which needs the same spacing)
 [

@@ -10,7 +10,7 @@ repository = "https://github.com/gdquest/gdscript-formatter"
 anyhow = "1.0"
 clap = { version = "4.0", features = ["derive"] }
 topiary-core = "0.6"
-tree-sitter-gdscript  = { git = "https://github.com/PrestonKnopp/tree-sitter-gdscript.git", rev = "d28f24a9cc482a5274d77d41918b052e72cc18f4" }
+tree-sitter-gdscript  = { git = "https://github.com/PrestonKnopp/tree-sitter-gdscript.git", rev = "e8f2cb84bfd61d025cbc39e95346ebc6b866daf1" }
 regex = "1.11"
 tree-sitter = "0.25.9"
 
