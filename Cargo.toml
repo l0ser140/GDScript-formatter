@@ -12,7 +12,7 @@ clap = { version = "4.0", features = ["derive"] }
 topiary-core = "0.6"
 tree-sitter-gdscript  = { git = "https://github.com/PrestonKnopp/tree-sitter-gdscript.git", rev = "d28f24a9cc482a5274d77d41918b052e72cc18f4" }
 regex = "1.11"
-
+tree-sitter = "0.25.9"
 
 [dev-dependencies]
 assert_cmd = "2.0"

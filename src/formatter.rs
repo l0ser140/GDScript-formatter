@@ -1,7 +1,23 @@
+/**
+ * This module formats GDScript code using Topiary with tree-sitter to parse and
+ * format GDScript files.
+ *
+ * After the main formatting pass through Topiary, we apply post-processing steps
+ * to clean up and standardize the output. These include:
+ *
+ * - Adding vertical spacing between methods, classes, etc.
+ * - Removing unnecessary blank lines that might have been added during formatting
+ * - Removing dangling semicolons that sometimes end up on their own lines
+ * - Cleaning up lines that contain only whitespace
+ *
+ * Some of the post-processing is outside of Topiary's capabilities, while other
+ * rules have too much performance overhead when applied through Topiary.
+ */
 use std::io::BufWriter;
 
 use regex::RegexBuilder;
 use topiary_core::{formatter, Language, Operation, TopiaryQuery};
+use tree_sitter::{Query, QueryCursor, StreamingIterator, Tree};
 
 use crate::FormatterConfig;
 
@@ -54,8 +70,103 @@ pub fn format_gdscript_with_config(
         .map_err(|e| format!("Failed to parse topiary output as UTF-8: {}", e))?;
 
     formatted_content = postprocess(formatted_content);
+    formatted_content = postprocess_tree_sitter(formatted_content);
 
     Ok(formatted_content)
+}
+
+/// This function runs postprocess passes that uses tree-sitter.
+fn postprocess_tree_sitter(mut content: String) -> String {
+    let mut parser = tree_sitter::Parser::new();
+    parser
+        .set_language(&tree_sitter_gdscript::LANGUAGE.into())
+        .unwrap();
+    let mut tree = parser.parse(&content, None).unwrap();
+
+    handle_two_blank_line(&mut tree, &mut content);
+
+    content
+}
+
+/// This function makes sure we have the correct vertical spacing between important definitions:
+/// Two blank lines between function definitions, inner classes, etc. Taking any
+/// comments or docstrings into account.
+///
+/// This uses tree-sitter to find the relevant nodes and their positions.
+fn handle_two_blank_line(tree: &mut Tree, content: &mut String) {
+    let root = tree.root_node();
+    let sibling_definition_query = match Query::new(
+        &tree_sitter::Language::new(tree_sitter_gdscript::LANGUAGE),
+        "(([(variable_statement) (function_definition) (class_definition) (signal_statement) (const_statement) (enum_definition) (constructor_definition)]) @first
+. ((comment)* @comment . ([(function_definition) (constructor_definition) (class_definition)]) @second))",
+    ) {
+        Ok(q) => q,
+        Err(err) => {
+            panic!("Failed to create query: {}", err);
+        }
+    };
+
+    // First we need to find all the places where we should add blank lines.
+    // We can't modify the content string while tree-sitter is borrowing it, so we
+    // collect all the positions first, then make changes afterward.
+    let mut new_lines_at = Vec::new();
+    let mut cursor = QueryCursor::new();
+    let mut matches = cursor.matches(&sibling_definition_query, root, content.as_bytes());
+    while let Some(m) = matches.next() {
+        let first_node = m.captures[0].node;
+        if m.captures.len() == 3 {
+            let comment_node = m.captures[1].node;
+            let second_node = m.captures[2].node;
+            // If the @comment is on the same line as the first node,
+            // we'll add a blank line before the @second node
+            if comment_node.start_position().row == first_node.start_position().row {
+                // Find where to insert the new line (before any indentation)
+                let mut byte_idx = second_node.start_byte();
+                let mut position = second_node.start_position();
+                position.column = 0;
+                while content.as_bytes()[byte_idx] != b'\n' {
+                    byte_idx -= 1;
+                }
+                new_lines_at.push((byte_idx, position));
+            } else {
+                // Otherwise, add a blank line after the first node
+                new_lines_at.push((first_node.end_byte(), first_node.end_position()));
+            }
+        } else {
+            // If there's no comment between the nodes, add a blank line after the first node
+            new_lines_at.push((first_node.end_byte(), first_node.end_position()));
+        }
+    }
+
+    // We sort the positions in reverse order so that when we insert new lines,
+    // we don't mess up the positions of the other insertions we need to make.
+    new_lines_at.sort_by(|a, b| b.cmp(a));
+
+    for (byte_idx, position) in new_lines_at {
+        let mut new_end_position = position;
+        let mut new_end_byte_idx = byte_idx;
+        // Only add a second blank line if there isn't already one
+        if content.as_bytes()[byte_idx + 1] != b'\n' {
+            new_end_position.row += 1;
+            new_end_byte_idx += 1;
+            content.insert(byte_idx, '\n');
+        }
+        // Add the first blank line
+        new_end_position.row += 1;
+        new_end_byte_idx += 1;
+        content.insert(byte_idx, '\n');
+
+        // Update the tree sitter parse tree to reflect our changes so that any
+        // future processing will work with the correct positions
+        tree.edit(&tree_sitter::InputEdit {
+            start_byte: byte_idx,
+            old_end_byte: byte_idx,
+            new_end_byte: new_end_byte_idx,
+            start_position: position,
+            old_end_position: position,
+            new_end_position,
+        });
+    }
 }
 
 /// This function runs over the content before going through topiary.
