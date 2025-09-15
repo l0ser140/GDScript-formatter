@@ -1,3 +1,18 @@
+/**
+ * This module formats GDScript code using Topiary with tree-sitter to parse and
+ * format GDScript files.
+ *
+ * After the main formatting pass through Topiary, we apply post-processing steps
+ * to clean up and standardize the output. These include:
+ *
+ * - Adding vertical spacing between methods, classes, etc.
+ * - Removing unnecessary blank lines that might have been added during formatting
+ * - Removing dangling semicolons that sometimes end up on their own lines
+ * - Cleaning up lines that contain only whitespace
+ *
+ * Some of the post-processing is outside of Topiary's capabilities, while other
+ * rules have too much performance overhead when applied through Topiary.
+ */
 use std::io::BufWriter;
 
 use regex::RegexBuilder;
@@ -73,33 +88,39 @@ fn postprocess_tree_sitter(mut content: String) -> String {
     content
 }
 
-/// This function ensures that some statements has two blank lines between them.
+/// This function makes sure we have the correct vertical spacing between important definitions:
+/// Two blank lines between function definitions, inner classes, etc. Taking any
+/// comments or docstrings into account.
+///
+/// This uses tree-sitter to find the relevant nodes and their positions.
 fn handle_two_blank_line(tree: &mut Tree, content: &mut String) {
     let root = tree.root_node();
-    let q = match Query::new(
+    let sibling_definition_query = match Query::new(
         &tree_sitter::Language::new(tree_sitter_gdscript::LANGUAGE),
         "(([(variable_statement) (function_definition) (class_definition) (signal_statement) (const_statement) (enum_definition) (constructor_definition)]) @first
 . ((comment)* @comment . ([(function_definition) (constructor_definition) (class_definition)]) @second))",
     ) {
         Ok(q) => q,
         Err(err) => {
-            panic!("{}", err);
+            panic!("Failed to create query: {}", err);
         }
     };
 
-    // collect positions for the new lines first because we can't
-    // modify string while it is borrowed by tree-sitter
+    // First we need to find all the places where we should add blank lines.
+    // We can't modify the content string while tree-sitter is borrowing it, so we
+    // collect all the positions first, then make changes afterward.
     let mut new_lines_at = Vec::new();
     let mut cursor = QueryCursor::new();
-    let mut matches = cursor.matches(&q, root, content.as_bytes());
+    let mut matches = cursor.matches(&sibling_definition_query, root, content.as_bytes());
     while let Some(m) = matches.next() {
         let first_node = m.captures[0].node;
         if m.captures.len() == 3 {
             let comment_node = m.captures[1].node;
             let second_node = m.captures[2].node;
-            // if @comment node and @first node is on the same line insert new line BEFORE @second node
+            // If the @comment is on the same line as the first node,
+            // we'll add a blank line before the @second node
             if comment_node.start_position().row == first_node.start_position().row {
-                // insert new line BEFORE indentation
+                // Find where to insert the new line (before any indentation)
                 let mut byte_idx = second_node.start_byte();
                 let mut position = second_node.start_position();
                 position.column = 0;
@@ -108,32 +129,35 @@ fn handle_two_blank_line(tree: &mut Tree, content: &mut String) {
                 }
                 new_lines_at.push((byte_idx, position));
             } else {
+                // Otherwise, add a blank line after the first node
                 new_lines_at.push((first_node.end_byte(), first_node.end_position()));
             }
         } else {
-            // if there is no @comment between two nodes then insert new line AFTER @first node
+            // If there's no comment between the nodes, add a blank line after the first node
             new_lines_at.push((first_node.end_byte(), first_node.end_position()));
         }
     }
 
-    // sort in descending order to avoid shifting indices
-    // when inserting new lines
+    // We sort the positions in reverse order so that when we insert new lines,
+    // we don't mess up the positions of the other insertions we need to make.
     new_lines_at.sort_by(|a, b| b.cmp(a));
 
     for (byte_idx, position) in new_lines_at {
         let mut new_end_position = position;
         let mut new_end_byte_idx = byte_idx;
-        // do not insert second blank line if there is already one
+        // Only add a second blank line if there isn't already one
         if content.as_bytes()[byte_idx + 1] != b'\n' {
             new_end_position.row += 1;
             new_end_byte_idx += 1;
             content.insert(byte_idx, '\n');
         }
+        // Add the first blank line
         new_end_position.row += 1;
         new_end_byte_idx += 1;
         content.insert(byte_idx, '\n');
 
-        // apply edits to tree so that later postprocess passes can still get correct node positions
+        // Update the tree sitter parse tree to reflect our changes so that any
+        // future processing will work with the correct positions
         tree.edit(&tree_sitter::InputEdit {
             start_byte: byte_idx,
             old_end_byte: byte_idx,
