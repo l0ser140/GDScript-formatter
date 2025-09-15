@@ -60,6 +60,7 @@ pub fn format_gdscript_with_config(
     Ok(formatted_content)
 }
 
+/// This function runs postprocess passes that uses tree-sitter.
 fn postprocess_tree_sitter(mut content: String) -> String {
     let mut parser = tree_sitter::Parser::new();
     parser
@@ -72,6 +73,7 @@ fn postprocess_tree_sitter(mut content: String) -> String {
     content
 }
 
+/// This function ensures that some statements has two blank lines between them.
 fn handle_two_blank_line(tree: &mut Tree, content: &mut String) {
     let root = tree.root_node();
     let q = match Query::new(
@@ -91,16 +93,26 @@ fn handle_two_blank_line(tree: &mut Tree, content: &mut String) {
     let mut cursor = QueryCursor::new();
     let mut matches = cursor.matches(&q, root, content.as_bytes());
     while let Some(m) = matches.next() {
+        let first_node = m.captures[0].node;
         if m.captures.len() == 3 {
-            // if @comment node and @first node is on the same line insert new line before @second node
-            if m.captures[1].node.start_position().row == m.captures[0].node.start_position().row {
-                new_lines_at.push(m.captures[2].node.start_byte());
+            let comment_node = m.captures[1].node;
+            let second_node = m.captures[2].node;
+            // if @comment node and @first node is on the same line insert new line BEFORE @second node
+            if comment_node.start_position().row == first_node.start_position().row {
+                // insert new line BEFORE indentation
+                let mut byte_idx = second_node.start_byte();
+                let mut position = second_node.start_position();
+                position.column = 0;
+                while content.as_bytes()[byte_idx] != b'\n' {
+                    byte_idx -= 1;
+                }
+                new_lines_at.push((byte_idx, position));
             } else {
-                new_lines_at.push(m.captures[0].node.end_byte());
+                new_lines_at.push((first_node.end_byte(), first_node.end_position()));
             }
         } else {
-            // if there is no @comment between two nodes then insert new line after @first node
-            new_lines_at.push(m.captures[0].node.end_byte());
+            // if there is no @comment between two nodes then insert new line AFTER @first node
+            new_lines_at.push((first_node.end_byte(), first_node.end_position()));
         }
     }
 
@@ -108,11 +120,28 @@ fn handle_two_blank_line(tree: &mut Tree, content: &mut String) {
     // when inserting new lines
     new_lines_at.sort_by(|a, b| b.cmp(a));
 
-    for pos in new_lines_at {
-        if content.as_bytes()[pos + 1] != b'\n' {
-            content.insert(pos, '\n');
+    for (byte_idx, position) in new_lines_at {
+        let mut new_end_position = position;
+        let mut new_end_byte_idx = byte_idx;
+        // do not insert second blank line if there is already one
+        if content.as_bytes()[byte_idx + 1] != b'\n' {
+            new_end_position.row += 1;
+            new_end_byte_idx += 1;
+            content.insert(byte_idx, '\n');
         }
-        content.insert(pos, '\n');
+        new_end_position.row += 1;
+        new_end_byte_idx += 1;
+        content.insert(byte_idx, '\n');
+
+        // apply edits to tree so that later postprocess passes can still get correct node positions
+        tree.edit(&tree_sitter::InputEdit {
+            start_byte: byte_idx,
+            old_end_byte: byte_idx,
+            new_end_byte: new_end_byte_idx,
+            start_position: position,
+            old_end_position: position,
+            new_end_position,
+        });
     }
 }
 
