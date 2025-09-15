@@ -68,17 +68,6 @@
     (#delimiter! "\n"))
 (extends_statement) @prepend_space
 
-; EMPTY LINES BETWEEN DEFINITIONS
-;
-; Add 2 newlines between top-level property definitions and function definitions
-; Note: the . between nodes constrains the query to direct siblings (instead of
-; matching a series of indirect siblings like e.g. variable + class + ... +
-; function)
-([(variable_statement) (function_definition) (class_definition) (signal_statement) (const_statement) (enum_definition) (constructor_definition)]
-    .
-    [(function_definition) (constructor_definition) (class_definition)] @prepend_delimiter @prepend_hardline
-    (#delimiter! "\n"))
-
 ; CONST DEFINITIONS
 (const_statement ":" @append_space)
 

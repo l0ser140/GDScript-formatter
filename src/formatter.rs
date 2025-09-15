@@ -2,6 +2,7 @@ use std::io::BufWriter;
 
 use regex::RegexBuilder;
 use topiary_core::{formatter, Language, Operation, TopiaryQuery};
+use tree_sitter::{Query, QueryCursor, StreamingIterator, Tree};
 
 use crate::FormatterConfig;
 
@@ -54,8 +55,65 @@ pub fn format_gdscript_with_config(
         .map_err(|e| format!("Failed to parse topiary output as UTF-8: {}", e))?;
 
     formatted_content = postprocess(formatted_content);
+    formatted_content = postprocess_tree_sitter(formatted_content);
 
     Ok(formatted_content)
+}
+
+fn postprocess_tree_sitter(mut content: String) -> String {
+    let mut parser = tree_sitter::Parser::new();
+    parser
+        .set_language(&tree_sitter_gdscript::LANGUAGE.into())
+        .unwrap();
+    let mut tree = parser.parse(&content, None).unwrap();
+
+    handle_two_blank_line(&mut tree, &mut content);
+
+    content
+}
+
+fn handle_two_blank_line(tree: &mut Tree, content: &mut String) {
+    let root = tree.root_node();
+    let q = match Query::new(
+        &tree_sitter::Language::new(tree_sitter_gdscript::LANGUAGE),
+        "(([(variable_statement) (function_definition) (class_definition) (signal_statement) (const_statement) (enum_definition) (constructor_definition)]) @first
+. ((comment)? @comment . ([(function_definition) (constructor_definition) (class_definition)]) @second))",
+    ) {
+        Ok(q) => q,
+        Err(err) => {
+            panic!("{}", err);
+        }
+    };
+
+    // collect positions for the new lines first because we can't
+    // modify string while it is borrowed by tree-sitter
+    let mut new_lines_at = Vec::new();
+    let mut cursor = QueryCursor::new();
+    let mut matches = cursor.matches(&q, root, content.as_bytes());
+    while let Some(m) = matches.next() {
+        if m.captures.len() == 3 {
+            // if @comment node and @first node is on the same line insert new line before @second node
+            if m.captures[1].node.start_position().row == m.captures[0].node.start_position().row {
+                new_lines_at.push(m.captures[2].node.start_byte());
+            } else {
+                new_lines_at.push(m.captures[0].node.end_byte());
+            }
+        } else {
+            // if there is no @comment between two nodes then insert new line after @first node
+            new_lines_at.push(m.captures[0].node.end_byte());
+        }
+    }
+
+    // sort in descending order to avoid shifting indices
+    // when inserting new lines
+    new_lines_at.sort_by(|a, b| b.cmp(a));
+
+    for pos in new_lines_at {
+        if content.as_bytes()[pos + 1] != b'\n' {
+            content.insert(pos, '\n');
+        }
+        content.insert(pos, '\n');
+    }
 }
 
 /// This function runs over the content before going through topiary.
