@@ -213,3 +213,6 @@
 ; This is used to preserve new lines after semicolons for people who use them on
 ; all code lines
 (";") @append_hardline
+
+; Calls to get_node get parsed as special nodes, we need them to preserve cases like %NodeName or $Path/To/Node
+(get_node) @leaf
