@@ -31,3 +31,6 @@ path = "src/main.rs"
 
 [profile.release]
 strip = true
+debug = false
+opt-level = 3
+lto = true
