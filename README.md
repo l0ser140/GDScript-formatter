@@ -2,9 +2,15 @@
 
 A fast code formatter for Godot's GDScript programming language built with [Tree Sitter GDScript](https://github.com/PrestonKnopp/tree-sitter-gdscript) and [Topiary](https://topiary.tweag.io/).
 
-The goal of this project is to provide a simple and fast GDScript code formatter that's easy to iterate on and contribute to while we wait for an official one to be integrated into the Godot game engine.
+The goal of this project is to provide a simple and fast GDScript code formatter that's easy to iterate on, contribute to, and easy to maintain.
 
-*You can learn more about the motivation behind this project in the [Motivation section](#motivation) below.*
+## Features
+
+- Format GDScript files nearly instantly (less than 100ms for a 1000-line file on a mid-range laptop)
+- Reorder GDScript code to match the official GDScript style guide (variables at the top, then functions, etc.)
+- Format code in place (overwrite the file) or print to the standard output
+- Check if a file is formatted (for CI/build systems)
+- Configure spaces vs tabs and indentation size
 
 ## Installing and running the formatter
 

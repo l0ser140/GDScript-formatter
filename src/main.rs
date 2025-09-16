@@ -50,6 +50,12 @@ struct Args {
         value_name = "NUM"
     )]
     indent_size: usize,
+    #[arg(
+        long,
+        help = "Reorder source-level declarations (signals, properties, methods, etc.) according to the official GDScript style guide. \
+        This is optional and applies after the main formatting pass."
+    )]
+    reorder_code: bool,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -77,6 +83,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = FormatterConfig {
         indent_size: args.indent_size,
         use_spaces: args.use_spaces,
+        reorder_code: args.reorder_code,
     };
 
     let formatted_content = format_gdscript_with_config(&input_content, &config)?;

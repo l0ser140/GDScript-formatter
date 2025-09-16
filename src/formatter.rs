@@ -9,6 +9,7 @@
  * - Removing unnecessary blank lines that might have been added during formatting
  * - Removing dangling semicolons that sometimes end up on their own lines
  * - Cleaning up lines that contain only whitespace
+ * - Optionally reordering code elements according to the GDScript style guide
  *
  * Some of the post-processing is outside of Topiary's capabilities, while other
  * rules have too much performance overhead when applied through Topiary.
@@ -71,6 +72,14 @@ pub fn format_gdscript_with_config(
 
     formatted_content = postprocess(formatted_content);
     formatted_content = postprocess_tree_sitter(formatted_content);
+
+    if config.reorder_code {
+        formatted_content = crate::reorder::reorder_gdscript_elements(&formatted_content)
+            .unwrap_or_else(|e| {
+                eprintln!("Warning: Code reordering failed: {}. Returning formatted code without reordering.", e);
+                formatted_content
+            });
+    }
 
     Ok(formatted_content)
 }
