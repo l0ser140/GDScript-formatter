@@ -29,6 +29,10 @@ gdscript = []
 name = "gdscript-formatter"
 path = "src/main.rs"
 
+[[bin]]
+name = "benchmark"
+path = "src/scripts/benchmark.rs"
+
 [profile.release]
 strip = true
 debug = false
