@@ -69,7 +69,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
 
     let input_content = match &args.input {
-        Some(file_path) => fs::read_to_string(&file_path)
+        Some(file_path) => fs::read_to_string(file_path)
             .map_err(|e| format!("Failed to read file {}: {}", file_path.display(), e))?,
         None => {
             let mut buffer = String::new();
@@ -96,19 +96,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("File is formatted");
     } else {
         match (args.input.as_ref(), args.stdout) {
-            // If there's no input file, always output to stdout
-            (None, _) => {
-                print!("{}", formatted_content);
-            }
-            // We're reading from a file and the --stdout flag is on: we output to stdout
-            (Some(_), true) => {
-                print!("{}", formatted_content);
-            }
-            // We're reading from a file without the --stdout flag: we overwrite the input file
+            // If we're reading from a file without the --stdout flag: we overwrite the input file
             (Some(input_file), false) => {
                 fs::write(input_file, formatted_content).map_err(|e| {
                     format!("Failed to write to file {}: {}", input_file.display(), e)
                 })?;
+            }
+            // Otherwise we output to stdout
+            _ => {
+                print!("{}", formatted_content);
             }
         }
     }
