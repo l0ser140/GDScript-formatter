@@ -872,7 +872,7 @@ dependencies = [
 [[package]]
 name = "tree-sitter-gdscript"
 version = "6.0.0"
-source = "git+https://github.com/PrestonKnopp/tree-sitter-gdscript.git?rev=e8f2cb84bfd61d025cbc39e95346ebc6b866daf1#e8f2cb84bfd61d025cbc39e95346ebc6b866daf1"
+source = "git+https://github.com/PrestonKnopp/tree-sitter-gdscript.git?rev=e7393a9c4d5eb84bcea5d8a22723d4bf9bdd60e3#e7393a9c4d5eb84bcea5d8a22723d4bf9bdd60e3"
 dependencies = [
  "cc",
  "tree-sitter-language",
