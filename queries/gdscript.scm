@@ -14,6 +14,7 @@
 ; Preserve comments and strings as they are
 (comment) @leaf
 (string) @leaf
+(string_name) @leaf
 
 ; TYPE ANNOTATION SPACING
 (typed_parameter ":" @append_space)
