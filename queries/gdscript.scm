@@ -216,3 +216,5 @@
 
 ; Calls to get_node get parsed as special nodes, we need them to preserve cases like %NodeName or $Path/To/Node
 (get_node) @leaf
+
+(line_continuation) @prepend_space @append_antispace @append_hardline
