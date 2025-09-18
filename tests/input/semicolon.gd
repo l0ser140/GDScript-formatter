@@ -14,3 +14,9 @@ func bar():
 		print("c is less than d");
 	if c > d:
 		print("a is greater than b");
+
+
+func test():
+	print("A") ; ; print("B")
+
+func a(): print("a");

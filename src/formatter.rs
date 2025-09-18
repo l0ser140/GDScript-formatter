@@ -164,7 +164,7 @@ impl Formatter {
         if !self.input.contains(";") {
             return self;
         }
-        let re_trailing = RegexBuilder::new(r"\s+;$")
+        let re_trailing = RegexBuilder::new(r"(\s*;)+$")
             .multi_line(true)
             .build()
             .expect("semicolon regex should compile");
