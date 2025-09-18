@@ -2,6 +2,33 @@
 
 This file documents the changes made to the formatter with each release. This project uses [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
+## Release 0.5.0 (2025-09-18)
+
+This release greatly improves the performance of the formatter, which makes it feel even snappier than before. The time to format is divided by up to 2.
+
+### Added
+
+- Support for multiline function calls with correct indentation
+- Option to reorder GDScript code according to the official style guide
+- Benchmark script to test the formatter's performance on small and large files (run `cargo run --bin benchmark --release`)
+
+### Changed
+
+- Updated GDScript tree-sitter parser and tree-sitter library to the latest version, bringing a big performance improvement (up to 30%)
+- Optimized release builds with lto compile flags (this brings a 10-20% speed improvement)
+- Improved vertical spacing between class-level declarations to add two lines even if there are docstrings
+- Improved module documentation and docstrings
+- Vertical spacing logic to account for multi-line comments/docstrings before definitions
+- Refactored formatter to use more idiomatic Rust (the formatter is now a struct and multiline module comments are docstrings)
+- `gdscript-format` is now the default binary for `cargo run`
+
+### Fixed
+
+- Loss of node names/paths in `%` and `$ get_node` syntaxes
+- Leading space before `not` being lost during formatting in the expression `not in`
+- Line continuation markers being lost upon formatting
+- Incorrect GitHub URLs in README (#15)
+
 ## Release 0.4.0 (2025-09-10)
 
 ### Fixed
