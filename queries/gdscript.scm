@@ -15,6 +15,7 @@
 (comment) @leaf
 (string) @leaf
 (string_name) @leaf
+(node_path) @leaf
 
 ; TYPE ANNOTATION SPACING
 (typed_parameter ":" @append_space)
