@@ -4,9 +4,11 @@ A fast code formatter for Godot's GDScript programming language built with [Tree
 
 The goal of this project is to provide a simple and really fast GDScript code formatter that's easy to contribute to, and easy to maintain. It also benefits GDScript support in code editors like Zed, Neovim, and Emacs as we use the project to improve the Tree Sitter GDScript parser.
 
+**Use a version control system:** Please consider using a version control system like Git to track changes to your code before running the formatter. Even though we already use the formatter ourselves at work, GDScript is a complex language and a formatter needs testing on all possible syntax combinations in the language to ensure the output is rock solid. There can always be edge cases or less common syntax that may not be handled correctly yet.
+
 ## Features
 
-- Format GDScript files nearly instantly (less than 100ms for a 1000-line file on a mid-range laptop)
+- Format GDScript files nearly instantly (less than 100ms for a 1000-line file on a mid-range laptop, less than 30ms for most files)
 - Reorder GDScript code to match the official GDScript style guide (variables at the top, then functions, etc.)
 - Format code in place (overwrite the file) or print to the standard output
 - Check if a file is formatted (for CI/build systems)
