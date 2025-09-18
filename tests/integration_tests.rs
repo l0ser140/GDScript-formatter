@@ -1,4 +1,4 @@
-use gdscript_formatter::format_gdscript;
+use gdscript_formatter::formatter::format_gdscript;
 use similar::{ChangeTag, TextDiff};
 use std::fs;
 use std::path::Path;

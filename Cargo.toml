@@ -8,7 +8,6 @@ repository = "https://github.com/gdquest/gdscript-formatter"
 default-run = "gdscript-formatter"
 
 [dependencies]
-anyhow = "1.0"
 clap = { version = "4.0", features = ["derive"] }
 topiary-core = "0.6"
 tree-sitter-gdscript  = { git = "https://github.com/PrestonKnopp/tree-sitter-gdscript.git", rev = "9686853b696db07118ad110e440d6de0ca6498b4" }
@@ -16,9 +15,6 @@ regex = "1.11"
 tree-sitter = "0.25.9"
 
 [dev-dependencies]
-assert_cmd = "2.0"
-predicates = "3.0"
-tempfile = "3.0"
 test_each_file = "0.3.5"
 similar = "2.7.0"
 
@@ -36,6 +32,4 @@ path = "src/scripts/benchmark.rs"
 
 [profile.release]
 strip = true
-debug = false
-opt-level = 3
 lto = true

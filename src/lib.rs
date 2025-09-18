@@ -1,8 +1,7 @@
 pub mod formatter;
 pub mod reorder;
 
-pub use formatter::{format_gdscript, format_gdscript_with_config};
-
+#[derive(Clone)]
 pub struct FormatterConfig {
     pub indent_size: usize,
     pub use_spaces: bool,

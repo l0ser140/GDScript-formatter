@@ -1,19 +1,19 @@
-/// This module tests the performance of the GDScript formatter. Use this to quickly test the
-/// performance impact of changes to the formatter locally.
-///
-/// Run cargo run --bin benchmark --release to compile and run the benchmark.
-/// You can use it in a shell script to compare performance between two git revisions.
-///
-/// For example, to compare between this commit and the previous one:
-///
-/// ```sh
-/// cargo run --bin benchmark --release > benchmark_results.txt
-/// echo "On previous commit:\n" >> benchmark_results.txt
-/// git checkout HEAD^
-/// cargo run --bin benchmark --release >> benchmark_results.txt
-/// git checkout -
-/// ```
-use gdscript_formatter::{format_gdscript_with_config, FormatterConfig};
+//! This module tests the performance of the GDScript formatter. Use this to quickly test the
+//! performance impact of changes to the formatter locally.
+//!
+//! Run cargo run --bin benchmark --release to compile and run the benchmark.
+//! You can use it in a shell script to compare performance between two git revisions.
+//!
+//! For example, to compare between this commit and the previous one:
+//!
+//! ```sh
+//! cargo run --bin benchmark --release > benchmark_results.txt
+//! echo "On previous commit:\n" >> benchmark_results.txt
+//! git checkout HEAD^
+//! cargo run --bin benchmark --release >> benchmark_results.txt
+//! git checkout -
+//! ```
+use gdscript_formatter::{formatter::format_gdscript_with_config, FormatterConfig};
 use std::{fs, time::Instant};
 
 const ITERATIONS: u16 = 100;

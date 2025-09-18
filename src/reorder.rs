@@ -1,15 +1,12 @@
-/**
- * This module exposes a function that reorders GDScript code according to the
- * official GDScript style guide.
- *
- * It works as a separate processing pass that parses the GDScript code using
- * tree-sitter, detects top-level declarations, and reorders them according to
- * the style guide.
- *
- * We assume that you won't run this on every save, but rather manually using
- * a code editor command or task when you're met with a messy file.
- *
- */
+//! This module exposes a function that reorders GDScript code according to the
+//! official GDScript style guide.
+//!
+//! It works as a separate processing pass that parses the GDScript code using
+//! tree-sitter, detects top-level declarations, and reorders them according to
+//! the style guide.
+//!
+//! We assume that you won't run this on every save, but rather manually using
+//! a code editor command or task when you're met with a messy file.
 use tree_sitter::{Node, Query, QueryCursor, StreamingIterator, Tree};
 
 /// This method parses the GDScript content, extracts top-level elements,
