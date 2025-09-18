@@ -183,6 +183,7 @@
 (setget) @prepend_indent_start @append_indent_end
 (setget ":" @prepend_antispace)
 (setget ":" @append_hardline . (comment)? @do_nothing)
+(setget "," @append_space)
 (set_body ":" @prepend_antispace)
 (set_body (body) @prepend_hardline @append_hardline)
 (get_body ":" @prepend_antispace)

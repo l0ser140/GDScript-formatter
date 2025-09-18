@@ -12,3 +12,6 @@ var b: float = 10.0:
 		print(123)
 		pass
 		return b
+
+var prop: int = 0:
+	set =set_prop,get= get_prop
