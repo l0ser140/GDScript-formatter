@@ -186,6 +186,8 @@
 (pattern_section ":" @prepend_antispace)
 (pattern_section (body) @prepend_hardline)
 (pattern_section "," @prepend_antispace @append_space)
+(pattern_guard) @prepend_space
+(pattern_guard (_) @prepend_space)
 
 ; This is for ternary expressions, e.g. `a if b else c`
 (conditional_expression [("if") ("else")] @prepend_space @append_space)

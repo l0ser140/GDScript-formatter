@@ -9,3 +9,6 @@ func foo():
 			pass
 		_:
 			pass
+	match 0:
+		0 when true:
+			print("true")
