@@ -70,6 +70,7 @@
 ; CLASS DEFINITIONS
 (class_definition (body) @prepend_hardline)
 (class_name_statement) @append_space
+(class_definition) @prepend_hardline
 (source
     (extends_statement) @append_delimiter @append_hardline
     (#delimiter! "\n"))

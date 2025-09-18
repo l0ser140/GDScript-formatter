@@ -34,3 +34,11 @@ class InnerClass extends Node:
 		func bar():
 			var c = 1
 			print(a + b + c)
+
+
+class A:
+	extends RefCounted
+
+
+class B:
+	extends A
