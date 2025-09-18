@@ -2,6 +2,24 @@
 
 This file documents the changes made to the formatter with each release. This project uses [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
+## Release 0.5.1 (2025-09-18)
+
+This release fixes critical bugs that could cause data loss during formatting.
+
+### Added
+
+- Formatting support for pattern guards (syntax: `a when b:`)
+- Test cases for string literals to prevent regressions
+
+### Changed
+
+- Added warning in README about using version control systems when formatting code to prevent data loss
+
+### Fixed
+
+- StringName strings (`&"TextHere"`) being erased during formatting
+- NodePath strings (`^"Path/To/Node"`) being erased during formatting
+
 ## Release 0.5.0 (2025-09-18)
 
 This release greatly improves the performance of the formatter, which makes it feel even snappier than before. The time to format is divided by up to 2.
