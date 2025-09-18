@@ -67,28 +67,28 @@ pub enum MethodType {
     Custom,
 }
 
-/// This constant lists built-in virtual methods in the order they should appear
-/// The lower the number, the higher the priority (i.e. _init comes before _ready)
-const BUILTIN_VIRTUAL_METHODS: &[(&str, u8)] = &[
-    ("_init", 1),
-    ("_enter_tree", 2),
-    ("_ready", 3),
-    ("_process", 4),
-    ("_physics_process", 5),
-    ("_exit_tree", 6),
-    ("_input", 7),
-    ("_unhandled_input", 8),
-    ("_gui_input", 9),
-    ("_draw", 10),
-    ("_notification", 11),
-    ("_get_configuration_warnings", 12),
-    ("_validate_property", 13),
-    ("_get_property_list", 14),
-    ("_property_can_revert", 15),
-    ("_property_get_revert", 16),
-    ("_get", 17),
-    ("_set", 18),
-    ("_to_string", 19),
+/// This constant lists built-in virtual methods in the order they should appear.
+/// The higher the method is in the list, the higher the priority (i.e. _init comes before _ready).
+const BUILTIN_VIRTUAL_METHODS: &[&str] = &[
+    "_init",
+    "_enter_tree",
+    "_ready",
+    "_process",
+    "_physics_process",
+    "_exit_tree",
+    "_input",
+    "_unhandled_input",
+    "_gui_input",
+    "_draw",
+    "_notification",
+    "_get_configuration_warnings",
+    "_validate_property",
+    "_get_property_list",
+    "_property_can_revert",
+    "_property_get_revert",
+    "_get",
+    "_set",
+    "_to_string",
 ];
 
 impl GDScriptTokenKind {
@@ -137,7 +137,7 @@ impl GDScriptTokenKind {
         }
     }
 
-    /// Returns whether this element is private (starts with underscore)
+    /// Returns whether this element is private (starts with underscore).
     pub fn is_private(&self) -> bool {
         match self {
             GDScriptTokenKind::Signal(_, is_private) => *is_private,
@@ -155,7 +155,7 @@ impl GDScriptTokenKind {
 }
 
 /// This enum is used to group elements into broader categories to determine
-/// how much spacing to add between them when rebuilding the code
+/// how much spacing to add between them when rebuilding the code.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum TokenKind {
     // This is for the top of the class (@tool, class name etc)
@@ -171,7 +171,7 @@ enum TokenKind {
     InnerClass,
 }
 
-/// Gets the element type for grouping purposes
+/// Gets the element type for grouping purposes.
 fn get_token_kind(token_kind: &GDScriptTokenKind) -> TokenKind {
     match token_kind {
         GDScriptTokenKind::ClassAnnotation(_) => TokenKind::Header,
@@ -191,7 +191,7 @@ fn get_token_kind(token_kind: &GDScriptTokenKind) -> TokenKind {
     }
 }
 
-/// Extracts all top-level elements from the parsed tree
+/// Extracts all top-level elements from the parsed tree.
 fn extract_tokens_to_reorder(
     tree: &Tree,
     content: &str,
@@ -242,7 +242,7 @@ fn extract_tokens_to_reorder(
     // class docstring after the class declaration (why not the same as every
     // other declaration?). This code will fail if the class docstring is after
     // the class for the top level class name declaration right now.
-    let mut pending_comments: Vec<String> = Vec::new();
+    let mut pending_comments = Vec::new();
     for (node, text, _capture_index) in all_nodes {
         if node.kind() == "comment" {
             pending_comments.push(text);
@@ -264,7 +264,7 @@ fn extract_tokens_to_reorder(
     Ok(elements)
 }
 
-/// This function classifies a parsed tree sitter node into a GDScriptElement
+/// This function classifies a parsed tree sitter node into a GDScriptElement.
 fn classify_element(
     node: Node,
     text: &str,
@@ -330,7 +330,7 @@ fn classify_element(
     }
 }
 
-/// This function classifies a variable statement into the correct variable type to figure out how to order it
+/// This function classifies a variable statement into the correct variable type to figure out how to order it.
 fn classify_variable_statement(
     node: Node,
     content: &str,
@@ -368,109 +368,94 @@ fn classify_variable_statement(
     }
 }
 
-/// Returns the name of the signal from a signal statement node
+/// Returns the name of the signal from a signal statement node.
 fn extract_signal_name(node: Node, content: &str) -> Result<String, Box<dyn std::error::Error>> {
     let text = node.utf8_text(content.as_bytes())?;
-    if let Some(name_start) = text.find("signal ") {
-        let name_part = &text[name_start + 7..];
-        if let Some(name_end) = name_part.find(|c: char| c == '(' || c == ':' || c.is_whitespace())
-        {
-            Ok(name_part[..name_end].to_string())
-        } else {
-            Ok(name_part.to_string())
-        }
-    } else {
-        Ok("unknown_signal".to_string())
+    let Some(name) = text.strip_prefix("signal ") else {
+        return Ok("unknown_signal".to_string());
+    };
+
+    if let Some((name, _)) = name.split_once(|c: char| c == '(' || c == ':' || c.is_whitespace()) {
+        return Ok(name.to_string());
     }
+
+    Ok(name.to_string())
 }
 
-/// Returns the name of the enum from an enum definition node
+/// Returns the name of the enum from an enum definition node.
 fn extract_enum_name(node: Node, content: &str) -> Result<String, Box<dyn std::error::Error>> {
     let text = node.utf8_text(content.as_bytes())?;
-    if let Some(name_start) = text.find("enum ") {
-        let name_part = &text[name_start + 5..];
-        if let Some(name_end) = name_part.find(|c: char| c == '{' || c.is_whitespace()) {
-            let name = name_part[..name_end].trim();
-            if name.is_empty() {
-                Ok("unnamed_enum".to_string())
-            } else {
-                Ok(name.to_string())
-            }
-        } else {
-            Ok("unnamed_enum".to_string())
-        }
+    let Some(name) = text.strip_prefix("enum ") else {
+        return Ok("unknown_enum".to_string());
+    };
+
+    if let Some(name) = name
+        .split_once(|c: char| c == '{' || c.is_whitespace())
+        .map(|(n, _)| n.trim())
+        && !name.is_empty()
+    {
+        Ok(name.to_string())
     } else {
-        Ok("unknown_enum".to_string())
+        Ok("unnamed_enum".to_string())
     }
 }
 
-/// Returns the name of the constant from a const statement node
+/// Returns the name of the constant from a const statement node.
 fn extract_const_name(node: Node, content: &str) -> Result<String, Box<dyn std::error::Error>> {
     let text = node.utf8_text(content.as_bytes())?;
-    if let Some(name_start) = text.find("const ") {
-        let name_part = &text[name_start + 6..];
-        if let Some(name_end) = name_part.find(|c: char| c == '=' || c == ':' || c.is_whitespace())
-        {
-            Ok(name_part[..name_end].trim().to_string())
-        } else {
-            Ok(name_part.trim().to_string())
-        }
-    } else {
-        Ok("unknown_const".to_string())
+    let Some(name) = text.strip_prefix("const ") else {
+        return Ok("unknown_const".to_string());
+    };
+
+    if let Some((name, _)) = name.split_once(|c: char| c == '=' || c == ':' || c.is_whitespace()) {
+        return Ok(name.trim().to_string());
     }
+
+    Ok(name.trim().to_string())
 }
 
-/// Returns the name of the variable from a var statement node
+/// Returns the name of the variable from a var statement node.
 fn extract_variable_name(node: Node, content: &str) -> Result<String, Box<dyn std::error::Error>> {
     let text = node.utf8_text(content.as_bytes())?;
 
-    // Find and jump to the "var " keyword
-    if let Some(var_pos) = text.find("var ") {
-        let after_var = &text[var_pos + 4..];
-        if let Some(name_end) = after_var.find(|c: char| c == ':' || c == '=' || c.is_whitespace())
-        {
-            Ok(after_var[..name_end].trim().to_string())
-        } else {
-            Ok(after_var.trim().to_string())
-        }
-    } else {
-        Ok("unknown_var".to_string())
+    let Some(name) = text.strip_prefix("var ") else {
+        return Ok("unknown_var".to_string());
+    };
+
+    if let Some((name, _)) = name.split_once(|c: char| c == ':' || c == '=' || c.is_whitespace()) {
+        return Ok(name.trim().to_string());
     }
+
+    Ok(name.trim().to_string())
 }
 
-/// Returns the name of the function from a function definition node
+/// Returns the name of the function from a function definition node.
 fn extract_function_name(node: Node, content: &str) -> Result<String, Box<dyn std::error::Error>> {
     let text = node.utf8_text(content.as_bytes())?;
 
-    let func_pos = if let Some(pos) = text.find("func ") {
-        pos + 5
-    } else if let Some(_pos) = text.find("_init") {
-        return Ok("_init".to_string());
-    } else {
+    let Some(name) = text.strip_prefix("func ") else {
         return Ok("unknown_func".to_string());
     };
 
-    let after_func = &text[func_pos..];
-    if let Some(name_end) = after_func.find('(') {
-        Ok(after_func[..name_end].trim().to_string())
+    if let Some((name, _)) = name.split_once('(') {
+        Ok(name.trim().to_string())
     } else {
         Ok("unknown_func".to_string())
     }
 }
 
-/// Returns the name of an inner class from a class definition node
+/// Returns the name of an inner class from a class definition node.
 fn extract_class_name(node: Node, content: &str) -> Result<String, Box<dyn std::error::Error>> {
     let text = node.utf8_text(content.as_bytes())?;
-    if let Some(class_pos) = text.find("class ") {
-        let after_class = &text[class_pos + 6..];
-        if let Some(name_end) = after_class.find(':') {
-            Ok(after_class[..name_end].trim().to_string())
-        } else {
-            Ok(after_class.trim().to_string())
-        }
-    } else {
-        Ok("unknown_class".to_string())
+    let Some(name) = text.strip_prefix("class ") else {
+        return Ok("unknown_class".to_string());
+    };
+
+    if let Some((name, _)) = name.split_once(':') {
+        return Ok(name.trim().to_string());
     }
+
+    Ok(name.trim().to_string())
 }
 
 fn is_static_method(node: Node, content: &str) -> bool {
@@ -481,11 +466,12 @@ fn is_static_method(node: Node, content: &str) -> bool {
 fn get_builtin_virtual_priority(method_name: &str) -> Option<u8> {
     BUILTIN_VIRTUAL_METHODS
         .iter()
-        .find(|(name, _)| *name == method_name)
-        .map(|(_, priority)| *priority)
+        .enumerate()
+        // Position in the list is the priority
+        .find_map(|(index, name)| (*name == method_name).then_some((index + 1) as u8))
 }
 
-/// Sorts declarations according to the GDScript style guide and returns the ordered list
+/// Sorts declarations according to the GDScript style guide and returns the ordered list.
 fn sort_gdscript_tokens(
     mut tokens: Vec<GDScriptTokensWithComments>,
 ) -> Vec<GDScriptTokensWithComments> {
@@ -555,13 +541,13 @@ fn sort_gdscript_tokens(
 }
 
 /// This function takes the sorted declarations/code elements and rebuilds the
-/// GDScript code string from them
+/// GDScript code string from them.
 fn build_reordered_code(
     tokens: Vec<GDScriptTokensWithComments>,
     _original_content: &str,
 ) -> String {
     let mut output = String::new();
-    let mut previous_token_kind: Option<TokenKind> = None;
+    let mut previous_token_kind = None;
 
     for current_token in tokens {
         let current_token_type = get_token_kind(&current_token.token_kind);

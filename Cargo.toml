@@ -1,7 +1,7 @@
 [package]
 name = "gdscript-formatter"
 version = "0.8.1"
-edition = "2021"
+edition = "2024"
 description = "A GDScript code formatter using Topiary and Tree-sitter"
 license = "MIT"
 repository = "https://github.com/gdquest/gdscript-formatter"

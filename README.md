@@ -193,7 +193,7 @@ To add new formatting rules to the GDScript formatter, you can follow these step
 
 Here are the most important directories and files in the project:
 
-- `src/`: Contains the Rust code to compile and run the formatter using the CLI. It's currently a simple wrapper around the Topiary command line program, but later it could use Topiary as a library instead to pack everything into a simple binary.
+- `src/`: Contains the Rust code to compile and run the formatter using the CLI.
 - `tests/`: Contains test files for the formatter. It has input files with unformatted GDScript code and expected output files that the formatter should produce when run on the input files.
 - `queries/`: Contains the Topiary formatting rules for GDScript. The `gdscript.scm` file is where you define how GDScript code should be formatted based on Tree Sitter queries and Topiary features to mark nodes/patterns for formatting.
 - `config/`: Contains configuration files for Topiary - basically a small file that tells Topiary how to run the formatter for GDScript.
