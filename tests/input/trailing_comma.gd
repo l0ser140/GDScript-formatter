@@ -52,3 +52,10 @@ func bar(
 	b # comment
 ):
 	pass
+
+
+func f():
+	foo(
+		1,
+		2
+	)

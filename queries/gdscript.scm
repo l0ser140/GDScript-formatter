@@ -58,6 +58,7 @@
     "(" @append_hardline @append_indent_start
     ")" @prepend_hardline @prepend_indent_end
     (#multi_line_only!))
+(arguments ((_expression) @append_delimiter (#delimiter! ",") . ","? @do_nothing . (comment)? . ")") (#multi_line_only!))
 
 ; MULTI-LINE PARAMETERS (in function definitions)
 (parameters
