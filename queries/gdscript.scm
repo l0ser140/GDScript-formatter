@@ -67,6 +67,7 @@
 (parameters
     ([(typed_parameter) (typed_default_parameter) (identifier) (default_parameter)]) @prepend_hardline @prepend_indent_start @append_indent_end
     (#multi_line_only!))
+(parameters (([(typed_parameter) (typed_default_parameter) (identifier) (default_parameter)]) @append_delimiter (#delimiter! ",") . ","? @do_nothing . (comment)? . ")") (#multi_line_only!))
 
 ; CLASS DEFINITIONS
 (class_definition (body) @prepend_hardline)
