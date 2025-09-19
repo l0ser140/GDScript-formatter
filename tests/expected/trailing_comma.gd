@@ -60,3 +60,11 @@ func f():
 		1,
 		2,
 	)
+
+
+func test(a: int, b: int):
+	pass
+
+
+func test():
+	print("test", "test")

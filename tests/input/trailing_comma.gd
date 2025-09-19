@@ -4,7 +4,7 @@ var a = [
 	3
 ]
 
-var aa = [1, 2, 3]
+var aa = [1, 2, 3,]
 
 var b = [
 	1,
@@ -24,7 +24,7 @@ var d = {
 	"c": 3
 }
 
-var dd = {"a": 1, "b": 2, "c": 3}
+var dd = {"a": 1, "b": 2, "c": 3,}
 
 enum Foo {
 	A,
@@ -38,7 +38,7 @@ enum Foo2 {
 	C # comment
 }
 
-enum Foo3 {A, B, C}
+enum Foo3 {A, B, C,}
 
 func foo(
 	a,
@@ -59,3 +59,11 @@ func f():
 		1,
 		2
 	)
+
+
+func test(a: int, b: int,):
+	pass
+
+
+func test():
+	print("test", "test",)
