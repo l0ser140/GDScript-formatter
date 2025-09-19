@@ -196,7 +196,7 @@ impl Formatter {
         let sibling_definition_query = match Query::new(
             &tree_sitter::Language::new(tree_sitter_gdscript::LANGUAGE),
             "(([(variable_statement) (function_definition) (class_definition) (signal_statement) (const_statement) (enum_definition) (constructor_definition)]) @first
-    . ((comment)* @comment . ([(function_definition) (constructor_definition) (class_definition)]) @second))",
+    . (([(comment) (annotation)])* @comment . ([(function_definition) (constructor_definition) (class_definition)]) @second))",
         ) {
             Ok(q) => q,
             Err(err) => {
