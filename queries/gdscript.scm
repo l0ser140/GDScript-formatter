@@ -177,9 +177,6 @@
   (comment)
   (annotation)] @allow_blank_line_before)
 
-; tree-sitter parses @tool statement as an annotation node
-(source . (annotation) @append_hardline)
-
 (setget) @prepend_indent_start @append_indent_end
 (setget ":" @prepend_antispace)
 (setget ":" @append_hardline . (comment)? @do_nothing)
