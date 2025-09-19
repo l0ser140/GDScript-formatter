@@ -16,3 +16,7 @@ Ffffff,
 }
 func foo():
 	pass
+
+
+enum Test {
+	A, B }
