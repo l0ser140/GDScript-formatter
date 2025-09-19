@@ -177,9 +177,6 @@
   (comment)
   (annotation)] @allow_blank_line_before)
 
-; tree-sitter parses @tool statement as an annotation node
-(source . (annotation) @append_hardline)
-
 (setget) @prepend_indent_start @append_indent_end
 (setget ":" @prepend_antispace)
 (setget ":" @append_hardline . (comment)? @do_nothing)
@@ -217,7 +214,7 @@
 ; we again are using @append_space capture name, but this time we
 ; need to make sure to not add additional space between identifier and open paren
 (annotation) @append_space
-((annotation (identifier) @append_space) @append_empty_softline (#not-match? @append_space "^(onready|export)$"))
+((annotation (identifier) @append_space) @append_empty_softline . (comment)? @do_nothing (#not-match? @append_space "^(onready|export)$"))
 (annotation (arguments "(" @prepend_antispace))
 (function_definition (annotations (annotation) @append_hardline))
 
