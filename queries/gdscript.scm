@@ -41,7 +41,7 @@
 
 ; FUNCTIONS
 (function_definition (name) @append_antispace)
-(function_definition (body) @prepend_hardline)
+(function_definition (body) @prepend_hardline @append_hardline)
 ; This forces adding a line above all functions during the topiary formatting
 ; pass. Without this cases like "func a(): pass" would not get a line above them
 ; and get merged together, preventing the post-processing step in formatter.rs
@@ -72,7 +72,7 @@
 (parameters (([(typed_parameter) (typed_default_parameter) (identifier) (default_parameter)]) @append_delimiter (#delimiter! ",") . ","? @do_nothing . (comment)? . ")") (#multi_line_only!))
 
 ; CLASS DEFINITIONS
-(class_definition (body) @prepend_hardline)
+(class_definition (body) @prepend_hardline @append_hardline)
 (class_name_statement) @append_space
 (class_definition) @prepend_hardline
 (source
