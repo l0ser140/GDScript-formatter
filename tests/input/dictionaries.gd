@@ -8,3 +8,5 @@ var my_dictionary = {key = "value"}
 # But only if it fits on one line
 var my_dictionary_2 = {
 	key = "value"}
+
+var dict: Dictionary[int,int] = {}
