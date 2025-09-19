@@ -5,6 +5,12 @@ var prop = 10: # var comment
 	get: # get comment
 		return prop
 
+enum Foo {
+	A, # Comment
+	B, # Comment
+	C
+}
+
 
 class InnerClass: # class comment
 	pass

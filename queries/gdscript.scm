@@ -82,7 +82,7 @@
 (enumerator_list
   "{" @append_input_softline @append_indent_start
   "}" @prepend_input_softline @prepend_indent_end)
-(enumerator_list "," @append_spaced_softline)
+(enumerator_list "," @append_spaced_softline . (comment)? @do_nothing)
 (enumerator_list) @prepend_space
 
 ; CONSTRUCTORS
