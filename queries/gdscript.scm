@@ -28,13 +28,12 @@
 (array
   "[" @append_empty_softline @append_indent_start
   "]" @prepend_empty_softline @append_empty_softline @prepend_indent_end)
+(array "," @append_spaced_softline . (comment)? @do_nothing)
 
-(array "," @append_spaced_softline)
 (dictionary
   "{" @append_empty_softline @append_indent_start
   "}" @prepend_empty_softline @append_empty_softline @prepend_indent_end)
-
-(dictionary "," @append_spaced_softline)
+(dictionary "," @append_spaced_softline . (comment)? @do_nothing)
 (pair ":" @append_space)
 
 ; FUNCTIONS

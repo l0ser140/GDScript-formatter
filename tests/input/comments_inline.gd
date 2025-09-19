@@ -9,6 +9,25 @@ class InnerClass: # class comment
 	pass
 
 func _init(): # constructor comment
+	var lua_dict = {
+			# Comment
+			a = 0, # Comment
+			# Comment
+			b = 1, # Comment
+			# Comment
+	}
+
+	var arr = [
+		1, # Comment
+		2, # Comment
+		# Comment
+		2,
+		# Comment
+		# Comment 2
+		2,
+		# Comment
+		3,# Comment
+		]
 	pass
 
 func foo(): # func comment
