@@ -24,7 +24,7 @@ var d = {
 	"c": 3,
 }
 
-var dd = {"a": 1, "b": 2, "c": 3}
+var dd = { "a": 1, "b": 2, "c": 3 }
 
 enum Foo {
 	A,

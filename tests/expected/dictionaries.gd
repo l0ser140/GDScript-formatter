@@ -7,5 +7,5 @@ var dialogue_items: Array[Dictionary] = [
 var my_dictionary = { key = "value" }
 # But only if it fits on one line
 var my_dictionary_2 = {
-	key = "value"
+	key = "value",
 }
