@@ -32,6 +32,9 @@
 (array "," @append_spaced_softline . (comment)? @do_nothing)
 (array ((_expression) @append_delimiter (#delimiter! ",") . ","? @do_nothing . (comment)? . "]") (#multi_line_only!))
 
+(array "," @delete . "]" (#single_line_only!))
+(dictionary "," @delete . "}" (#single_line_only!))
+
 (dictionary
   "{" @append_empty_softline @append_indent_start
   "}" @prepend_empty_softline @prepend_indent_end)
@@ -50,7 +53,9 @@
 (function_definition) @prepend_hardline
 "->" @prepend_space @append_space
 (arguments "," @append_space (#single_line_only!))
+(arguments "," @delete . ")" (#single_line_only!))
 (parameters "," @append_space (#single_line_only!))
+(parameters "," @delete . ")" (#single_line_only!))
 
 ; MULTI-LINE ARGUMENTS (in function calls)
 (arguments "," @append_hardline (#multi_line_only!))
@@ -93,6 +98,7 @@
 (enumerator_list "," @append_spaced_softline . (comment)? @do_nothing)
 (enumerator_list ((enumerator) @append_delimiter (#delimiter! ",") . ","? @do_nothing . (comment)? . "}") (#multi_line_only!))
 (enumerator_list) @prepend_space
+(enumerator_list "," @delete . "}" (#single_line_only!))
 
 ; CONSTRUCTORS
 (constructor_definition (body) @prepend_hardline)
