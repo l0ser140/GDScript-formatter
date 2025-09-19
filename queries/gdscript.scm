@@ -33,7 +33,7 @@
 
 (dictionary
   "{" @append_empty_softline @append_indent_start
-  "}" @prepend_empty_softline @append_empty_softline @prepend_indent_end)
+  "}" @prepend_empty_softline @prepend_indent_end)
 (dictionary "," @append_spaced_softline . (comment)? @do_nothing)
 (dictionary "{" @append_space "}" @prepend_space (#single_line_only!))
 (pair ":" @append_space)
@@ -86,8 +86,9 @@
 
 ; ENUMS
 (enumerator_list
-  "{" @append_input_softline @append_indent_start
-  "}" @prepend_input_softline @prepend_indent_end)
+  "{" @append_empty_softline @append_indent_start
+  "}" @prepend_empty_softline @prepend_indent_end)
+(enumerator_list "{" @append_space "}" @prepend_space (#single_line_only!))
 (enumerator_list "," @append_spaced_softline . (comment)? @do_nothing)
 (enumerator_list ((enumerator) @append_delimiter (#delimiter! ",") . ","? @do_nothing . (comment)? . "}") (#multi_line_only!))
 (enumerator_list) @prepend_space
