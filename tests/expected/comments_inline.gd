@@ -1,3 +1,4 @@
+@export_group("my_group") # annotation comment
 var prop = 10: # var comment
 	set(value): # set comment
 		prop = value
