@@ -217,7 +217,7 @@
 ; we again are using @append_space capture name, but this time we
 ; need to make sure to not add additional space between identifier and open paren
 (annotation) @append_space
-((annotation (identifier) @append_space) @append_empty_softline (#not-match? @append_space "^(onready|export)$"))
+((annotation (identifier) @append_space) @append_empty_softline . (comment)? @do_nothing (#not-match? @append_space "^(onready|export)$"))
 (annotation (arguments "(" @prepend_antispace))
 (function_definition (annotations (annotation) @append_hardline))
 
