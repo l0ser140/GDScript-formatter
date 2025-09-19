@@ -2,13 +2,13 @@ func test():
 	print(
 		"Testing",
 		"multiline",
-		"print"
+		"print",
 	)
 
 	print(
 		"Testing",
 		"multiline",
-		"print"
+		"print",
 	)
 
 	print("Testing", "multiline", "print")
@@ -16,11 +16,11 @@ func test():
 	print(
 		"Testing",
 		"multiline",
-		"print"
+		"print",
 	)
 
 	print(
 		"Testing",
 		"multiline",
-		"print"
+		"print",
 	)

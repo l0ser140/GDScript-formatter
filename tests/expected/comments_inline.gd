@@ -8,7 +8,7 @@ var prop = 10: # var comment
 enum Foo {
 	A, # Comment
 	B, # Comment
-	C
+	C,
 }
 
 

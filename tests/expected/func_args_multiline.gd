@@ -2,7 +2,7 @@ func test(
 		a: int,
 		b: String,
 		c,
-		d = 42
+		d = 42,
 ) -> void:
 	pass
 

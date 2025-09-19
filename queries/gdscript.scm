@@ -29,6 +29,7 @@
   "[" @append_empty_softline @append_indent_start
   "]" @prepend_empty_softline @append_empty_softline @prepend_indent_end)
 (array "," @append_spaced_softline . (comment)? @do_nothing)
+(array ((_expression) @append_delimiter (#delimiter! ",") . ","? @do_nothing . (comment)? . "]") (#multi_line_only!))
 
 (dictionary
   "{" @append_empty_softline @append_indent_start
@@ -36,6 +37,7 @@
 (dictionary "," @append_spaced_softline . (comment)? @do_nothing)
 (dictionary "{" @append_space "}" @prepend_space (#single_line_only!))
 (pair ":" @append_space)
+(dictionary ((pair (_expression)) @append_delimiter (#delimiter! ",") . ","? @do_nothing . (comment)? . "}") (#multi_line_only!))
 
 ; FUNCTIONS
 (function_definition (name) @append_antispace)
@@ -57,6 +59,7 @@
     "(" @append_hardline @append_indent_start
     ")" @prepend_hardline @prepend_indent_end
     (#multi_line_only!))
+(arguments ((_expression) @append_delimiter (#delimiter! ",") . ","? @do_nothing . (comment)? . ")") (#multi_line_only!))
 
 ; MULTI-LINE PARAMETERS (in function definitions)
 (parameters
@@ -66,6 +69,7 @@
 (parameters
     ([(typed_parameter) (typed_default_parameter) (identifier) (default_parameter)]) @prepend_hardline @prepend_indent_start @append_indent_end
     (#multi_line_only!))
+(parameters (([(typed_parameter) (typed_default_parameter) (identifier) (default_parameter)]) @append_delimiter (#delimiter! ",") . ","? @do_nothing . (comment)? . ")") (#multi_line_only!))
 
 ; CLASS DEFINITIONS
 (class_definition (body) @prepend_hardline)
@@ -84,6 +88,7 @@
   "{" @append_input_softline @append_indent_start
   "}" @prepend_input_softline @prepend_indent_end)
 (enumerator_list "," @append_spaced_softline . (comment)? @do_nothing)
+(enumerator_list ((enumerator) @append_delimiter (#delimiter! ",") . ","? @do_nothing . (comment)? . "}") (#multi_line_only!))
 (enumerator_list) @prepend_space
 
 ; CONSTRUCTORS
