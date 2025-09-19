@@ -9,3 +9,5 @@ var my_dictionary = { key = "value" }
 var my_dictionary_2 = {
 	key = "value",
 }
+
+var dict: Dictionary[int, int] = { }

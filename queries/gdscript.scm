@@ -21,6 +21,7 @@
 (typed_parameter ":" @append_space)
 (typed_default_parameter ":" @append_space)
 (variable_statement ":" @append_space)
+(subscript_arguments "," @append_space)
 
 ; ARRAY AND DICTIONARY
 ; If the array is on a single line, only insert spaces between values. If it's
