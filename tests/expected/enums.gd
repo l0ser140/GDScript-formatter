@@ -10,7 +10,7 @@ enum ThirdEnum {
 	Eeeeee,
 	Ffffff,
 	Gggggg,
-	Hhhhhh
+	Hhhhhh,
 }
 
 

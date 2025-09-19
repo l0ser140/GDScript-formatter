@@ -29,12 +29,14 @@
   "[" @append_empty_softline @append_indent_start
   "]" @prepend_empty_softline @append_empty_softline @prepend_indent_end)
 (array "," @append_spaced_softline . (comment)? @do_nothing)
+(array ((_expression) @append_delimiter (#delimiter! ",") . ","? @do_nothing . (comment)? . "]") (#multi_line_only!))
 
 (dictionary
   "{" @append_empty_softline @append_indent_start
   "}" @prepend_empty_softline @append_empty_softline @prepend_indent_end)
 (dictionary "," @append_spaced_softline . (comment)? @do_nothing)
 (pair ":" @append_space)
+(dictionary ((pair (_expression)) @append_delimiter (#delimiter! ",") . ","? @do_nothing . (comment)? . "}") (#multi_line_only!))
 
 ; FUNCTIONS
 (function_definition (name) @append_antispace)
@@ -83,6 +85,7 @@
   "{" @append_input_softline @append_indent_start
   "}" @prepend_input_softline @prepend_indent_end)
 (enumerator_list "," @append_spaced_softline . (comment)? @do_nothing)
+(enumerator_list ((enumerator) @append_delimiter (#delimiter! ",") . ","? @do_nothing . (comment)? . "}") (#multi_line_only!))
 (enumerator_list) @prepend_space
 
 ; CONSTRUCTORS
