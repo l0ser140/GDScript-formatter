@@ -2,6 +2,28 @@
 
 This file documents the changes made to the formatter with each release. This project uses [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
+## Release 0.6.0 (2025-09-19)
+
+This release improves formatting consistency and fixes several edge cases related to spacing, comments, and function/class definitions.
+
+### Added
+
+- Space after commas in setter and getter declarations
+- Two blank lines before annotated functions
+
+### Changed
+
+- Improved the detection and removal of dangling semicolons
+- Removed unnecessary topiary rule for `@tool` annotations
+
+### Fixed
+
+- Functions with a single statement on a single line (e.g., `func a(): pass`) being incorrectly merged with the following function
+- Class definitions placed next to one another losing line breaks between them
+- Inline comments after annotations being misplaced
+- Comments in arrays and dictionaries being incorrectly formatted in some cases
+- Comments in enums being misaligned in some cases
+
 ## Release 0.5.1 (2025-09-18)
 
 This release fixes critical bugs that could cause data loss during formatting.
