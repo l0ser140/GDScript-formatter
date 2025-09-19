@@ -27,3 +27,4 @@ class A:
 	extends RefCounted
 class B:
 	extends A
+	var test = 2

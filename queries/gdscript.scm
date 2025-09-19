@@ -73,6 +73,7 @@
 
 ; CLASS DEFINITIONS
 (class_definition (body) @prepend_hardline @append_hardline)
+(class_definition (body (extends_statement) @append_hardline ))
 (class_name_statement) @append_space
 (class_definition) @prepend_hardline
 (source
