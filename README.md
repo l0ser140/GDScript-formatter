@@ -32,7 +32,7 @@ gdscript-format --check path/to/file.gd
 
 ## Status
 
-Version 0.5.0 - 09/18/2025 - The formatter now has many formatting rules implemented and is ready to test. It includes:
+09/18/2025 - The formatter now has many formatting rules implemented and is ready to test. It includes:
 
 - **Spaces**: leaving one space consistently between many operators, most keywords, or after commas in function calls, arrays, and dictionaries
 - **Multi-line structures**: simple arrays and dictionaries can be wrapped on one or multiple lines with indentation

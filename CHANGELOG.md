@@ -2,6 +2,23 @@
 
 This file documents the changes made to the formatter with each release. This project uses [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
+## Release 0.7.0 (2025-09-19)
+
+This release improves formatting consistency for dictionaries, arrays, and function parameters, and fixes several edge cases related to variable declarations and class definitions.
+
+### Added
+
+- Space after comma between types in typed dictionary type hints
+- Space after the opening brace and before closing braces of single line dictionaries
+- Trailing commas in arrays, dictionaries, enums, and function parameters
+- New line before enums closing brace
+- Removed trailing comma in singleline arrays/dictionaries/enums/functions
+
+### Fixed
+
+- Variable declaration after function getting placed inside function (or class)
+- Incorrect formatting when a declaration immediately follows an extends statement in an inner class
+
 ## Release 0.6.0 (2025-09-19)
 
 This release improves formatting consistency and fixes several edge cases related to spacing, comments, and function/class definitions.
