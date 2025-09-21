@@ -59,4 +59,9 @@ func foo(): # func comment
 	var lam = func(): # lambda comment
 		pass
 
+	bar(
+		a, # function call inline comment
+		b,
+	)
+
 	return # function trailing comment at end

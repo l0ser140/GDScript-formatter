@@ -59,7 +59,7 @@
 (parameters "," @delete . ")" (#single_line_only!))
 
 ; MULTI-LINE ARGUMENTS (in function calls)
-(arguments "," @append_hardline (#multi_line_only!))
+(arguments "," @append_hardline . (comment)? @do_nothing (#multi_line_only!))
 ; uncomment for double indentation in multiline function calls
 ; (arguments (_) @prepend_indent_start @append_indent_end)
 (arguments
