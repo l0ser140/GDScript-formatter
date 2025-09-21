@@ -29,7 +29,7 @@
 ; multi-line, format it with new lines.
 (array
   "[" @append_empty_softline @append_indent_start
-  "]" @prepend_empty_softline @append_empty_softline @prepend_indent_end)
+  "]" @prepend_empty_softline @prepend_indent_end)
 (array "," @append_spaced_softline . (comment)? @do_nothing)
 (array ((_expression) @append_delimiter (#delimiter! ",") . ","? @do_nothing . (comment)? . "]") (#multi_line_only!))
 
