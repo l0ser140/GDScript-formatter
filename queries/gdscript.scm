@@ -124,8 +124,7 @@
 [
   "&" "|" "^" "<<" ">>"]
 @prepend_space @append_space
-; ~ is generally right next to the variable it operates on, so we don't add a space before it
-"~" @append_space
+; ~ is generally right next to the variable it operates on, so we don't add a space after it
 [
     "=" ":=" "+=" "-=" "*=" "/=" "%=" "**=" "&=" "|=" "^=" "<<=" ">>="]
 @prepend_space @append_space
