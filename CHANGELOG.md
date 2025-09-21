@@ -2,6 +2,19 @@
 
 This file documents the changes made to the formatter with each release. This project uses [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
+## Release 0.7.1 (2025-09-21)
+
+This release brings two hotfixes and adds configuration instructions for two editors.
+
+### Added
+
+- Instructions to integrate the formatter into the Zed and Helix editors
+
+### Fixed
+
+- Regions being erased during formatting
+- Inline comments in function calls being misplaced
+
 ## Release 0.7.0 (2025-09-19)
 
 This release improves formatting consistency for dictionaries, arrays, and function parameters, and fixes several edge cases related to variable declarations and class definitions.
