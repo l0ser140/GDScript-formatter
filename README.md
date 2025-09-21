@@ -57,6 +57,32 @@ First, install the [zed-gdscript](https://github.com/GDQuest/zed-gdscript) exten
 
 If you renamed the binary to something else, adjust the `command` name accordingly. Once this is done, Zed will run the formatter every time you save a GDScript file. If this doesn't happen, ensure that the `format_on_save` setting in `settings.json` is set to `true` (this is the default). You can also format manually by executing `editor: format` command in Zed.
 
+### Helix
+
+1. Follow the [instructions](https://www.gdquest.com/library/gdscript_formatter/) carefully on installing the formatter and make sure it's in your **PATH**.
+
+2. Go to Helix config directory to edit your languages configuration file. Since I use helix as my terminal editor and I'm on macOS, I'll open it up with the **hx** command:
+
+```bash
+cd ~/.config/helix && hx languages.toml
+```
+
+3.  Add this line inside your **[[Language]]** block assigned to gdscript:
+
+```toml
+formatter = { command = "gdscript-formatter", args = ["--reorder-code"] }
+```
+
+Keep in mind, using gdscript with Helix [requires more configuration](https://github.com/helix-editor/helix/blob/master/languages.toml) than this, including [changing a few options inside Godot editor](https://docs.godotengine.org/en/stable/tutorials/editor/external_editor.html) and possibly making a script for activating Helix in your terminal of choice.
+
+4. Auto-format on save can be enabled by adding this line to your gdscript language options, as shown in the linked example at Helix repository:
+
+```toml
+auto-format = true
+```
+
+As a reminder: **don't leave this on when working on an important project without using a VCS!**.
+
 ## Status
 
 09/18/2025 - The formatter now has many formatting rules implemented and is ready to test. It includes:
