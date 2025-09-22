@@ -56,6 +56,8 @@ struct Args {
         This is optional and applies after the main formatting pass."
     )]
     reorder_code: bool,
+    #[arg(short, long)]
+    safe: bool,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -84,6 +86,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         indent_size: args.indent_size,
         use_spaces: args.use_spaces,
         reorder_code: args.reorder_code,
+        safe: args.safe,
     };
 
     let formatted_content = format_gdscript_with_config(&input_content, &config)?;
