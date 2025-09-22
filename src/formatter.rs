@@ -133,6 +133,7 @@ impl Formatter {
     fn postprocess(&mut self) -> &mut Self {
         self.clean_up_lines_with_only_whitespace()
             .fix_dangling_semicolons()
+            .remove_trailing_commas_from_preload()
             .postprocess_tree_sitter()
     }
 
@@ -201,6 +202,19 @@ impl Formatter {
             .build()
             .expect("semicolon regex should compile");
         self.content = re_trailing.replace_all(&self.content, "").to_string();
+        self
+    }
+
+    /// This function removes trailing commas from preload function calls.
+    /// The GDScript parser doesn't support trailing commas in preload calls,
+    /// but our formatter might add them for multi-line calls.
+    #[inline(always)]
+    fn remove_trailing_commas_from_preload(&mut self) -> &mut Self {
+        let re = RegexBuilder::new(r"preload\s*\(([^)]*),(\s*)\)")
+            .build()
+            .expect("preload regex should compile");
+
+        self.content = re.replace_all(&self.content, "preload($1$2)").to_string();
         self
     }
 
