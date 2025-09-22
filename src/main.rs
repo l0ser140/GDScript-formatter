@@ -56,7 +56,14 @@ struct Args {
         This is optional and applies after the main formatting pass."
     )]
     reorder_code: bool,
-    #[arg(short, long)]
+    #[arg(
+        short,
+        long,
+        help = "Enable safe mode. This mode ensures that after formatting, the code still has the same syntax and structure \
+        as before. If not, formatting is canceled. This offers some protection against the formatter failing on new syntax \
+        at the cost of a small little extra running time. Currently incompatible with --reorder-code.",
+        conflicts_with = "reorder_code"
+    )]
     safe: bool,
 }
 

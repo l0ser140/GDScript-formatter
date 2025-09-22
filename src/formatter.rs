@@ -314,7 +314,12 @@ fn compare_trees(left_tree: Tree, right_tree: Tree) -> bool {
         (left_stack.pop(), right_stack.pop())
     {
         if left_current_node.child_count() != right_current_node.child_count() {
-            // No point in checking further
+            // A different number of children means the syntax trees are different, so the code
+            // structure has changed.
+            // NOTE: There's a valid case of change: an annotation above a variable may be wrapped
+            // on the same line as the variable, which turns the annotation into a child of the variable.
+            // We could ignore this specific case, but for now, we consider any change in structure
+            // as a potential issue.
             return false;
         }
 
