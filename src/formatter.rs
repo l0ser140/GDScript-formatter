@@ -30,21 +30,39 @@ pub fn format_gdscript_with_config(
     content: &str,
     config: &FormatterConfig,
 ) -> Result<String, Box<dyn std::error::Error>> {
-    let mut formatter = Formatter {
-        input: content.to_owned(),
-        config: config.clone(),
-    };
+    let mut formatter = Formatter::new(content.to_owned(), config.clone());
 
     formatter.preprocess().format()?.postprocess().reorder();
-    Ok(formatter.finish())
+    formatter.finish()
 }
 
 struct Formatter {
-    input: String,
+    content: String,
     config: FormatterConfig,
+    input_tree: Option<Tree>,
 }
 
 impl Formatter {
+    #[inline(always)]
+    fn new(content: String, config: FormatterConfig) -> Self {
+        // Save original syntax tree for verification
+        let input_tree = if config.safe {
+            let mut parser = tree_sitter::Parser::new();
+            parser
+                .set_language(&tree_sitter_gdscript::LANGUAGE.into())
+                .unwrap();
+            Some(parser.parse(&content, None).unwrap())
+        } else {
+            None
+        };
+
+        Self {
+            content,
+            config,
+            input_tree,
+        }
+    }
+
     #[inline(always)]
     fn format(&mut self) -> Result<&mut Self, Box<dyn std::error::Error>> {
         let indent_string = if self.config.use_spaces {
@@ -60,7 +78,7 @@ impl Formatter {
             indent: Some(indent_string),
         };
 
-        let mut input = self.input.as_bytes();
+        let mut input = self.content.as_bytes();
         let mut output = Vec::new();
         let mut writer = BufWriter::new(&mut output);
 
@@ -77,7 +95,7 @@ impl Formatter {
 
         drop(writer);
 
-        self.input = String::from_utf8(output)
+        self.content = String::from_utf8(output)
             .map_err(|e| format!("Failed to parse topiary output as UTF-8: {}", e))?;
 
         Ok(self)
@@ -88,9 +106,9 @@ impl Formatter {
         if !self.config.reorder_code {
             return self;
         }
-        match crate::reorder::reorder_gdscript_elements(&self.input) {
+        match crate::reorder::reorder_gdscript_elements(&self.content) {
             Ok(reordered) => {
-                self.input = reordered;
+                self.content = reordered;
             }
             Err(e) => {
                 eprintln!(
@@ -118,9 +136,23 @@ impl Formatter {
             .postprocess_tree_sitter()
     }
 
+    /// Finishes formatting and returns the resulting file content.
     #[inline(always)]
-    fn finish(self) -> String {
-        self.input
+    fn finish(self) -> Result<String, Box<dyn std::error::Error>> {
+        // This will be Some if config.safe is true
+        if let Some(input_tree) = self.input_tree {
+            let mut parser = tree_sitter::Parser::new();
+            parser
+                .set_language(&tree_sitter_gdscript::LANGUAGE.into())
+                .unwrap();
+            let tree = parser.parse(&self.content, None).unwrap();
+
+            if !compare_trees(input_tree, tree) {
+                return Err("Trees are different".into());
+            }
+        }
+
+        Ok(self.content)
     }
 
     /// This function removes additional new line characters after `extends_statement`.
@@ -138,8 +170,8 @@ impl Formatter {
         .multi_line(true)
         .build()
         .expect("regex should compile");
-        self.input = re
-            .replace(&self.input, "$extends_line$extends_name\n")
+        self.content = re
+            .replace(&self.content, "$extends_line$extends_name\n")
             .to_string();
         self
     }
@@ -153,7 +185,7 @@ impl Formatter {
             .multi_line(true)
             .build()
             .expect("empty line regex should compile");
-        self.input = re.replace_all(&self.input, "\n").to_string();
+        self.content = re.replace_all(&self.content, "\n").to_string();
         self
     }
 
@@ -161,14 +193,14 @@ impl Formatter {
     /// by moving them to the end of the previous line.
     #[inline(always)]
     fn fix_dangling_semicolons(&mut self) -> &mut Self {
-        if !self.input.contains(";") {
+        if !self.content.contains(";") {
             return self;
         }
         let re_trailing = RegexBuilder::new(r"(\s*;)+$")
             .multi_line(true)
             .build()
             .expect("semicolon regex should compile");
-        self.input = re_trailing.replace_all(&self.input, "").to_string();
+        self.content = re_trailing.replace_all(&self.content, "").to_string();
         self
     }
 
@@ -179,9 +211,9 @@ impl Formatter {
         parser
             .set_language(&tree_sitter_gdscript::LANGUAGE.into())
             .unwrap();
-        let mut tree = parser.parse(&self.input, None).unwrap();
+        let mut tree = parser.parse(&self.content, None).unwrap();
 
-        Self::handle_two_blank_line(&mut tree, &mut self.input);
+        Self::handle_two_blank_line(&mut tree, &mut self.content);
 
         self
     }
@@ -266,4 +298,40 @@ impl Formatter {
             });
         }
     }
+}
+
+/// Returns true if both trees have the same structure.
+fn compare_trees(left_tree: Tree, right_tree: Tree) -> bool {
+    let mut left_cursor = left_tree.walk();
+    let mut right_cursor = right_tree.walk();
+
+    let mut left_stack = Vec::new();
+    let mut right_stack = Vec::new();
+    left_stack.push(left_cursor.node());
+    right_stack.push(right_cursor.node());
+
+    while let (Some(left_current_node), Some(right_current_node)) =
+        (left_stack.pop(), right_stack.pop())
+    {
+        if left_current_node.child_count() != right_current_node.child_count() {
+            // A different number of children means the syntax trees are different, so the code
+            // structure has changed.
+            // NOTE: There's a valid case of change: an annotation above a variable may be wrapped
+            // on the same line as the variable, which turns the annotation into a child of the variable.
+            // We could ignore this specific case, but for now, we consider any change in structure
+            // as a potential issue.
+            return false;
+        }
+
+        let left_children = left_current_node.children(&mut left_cursor);
+        let right_children = left_current_node.children(&mut right_cursor);
+        for (left_node, right_node) in left_children.zip(right_children) {
+            if left_node.grammar_id() != right_node.grammar_id() {
+                return false;
+            }
+            left_stack.push(left_node);
+            right_stack.push(right_node);
+        }
+    }
+    true
 }

@@ -56,6 +56,15 @@ struct Args {
         This is optional and applies after the main formatting pass."
     )]
     reorder_code: bool,
+    #[arg(
+        short,
+        long,
+        help = "Enable safe mode. This mode ensures that after formatting, the code still has the same syntax and structure \
+        as before. If not, formatting is canceled. This offers some protection against the formatter failing on new syntax \
+        at the cost of a small little extra running time. Currently incompatible with --reorder-code.",
+        conflicts_with = "reorder_code"
+    )]
+    safe: bool,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -84,6 +93,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         indent_size: args.indent_size,
         use_spaces: args.use_spaces,
         reorder_code: args.reorder_code,
+        safe: args.safe,
     };
 
     let formatted_content = format_gdscript_with_config(&input_content, &config)?;

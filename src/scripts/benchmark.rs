@@ -16,7 +16,7 @@
 use gdscript_formatter::{formatter::format_gdscript_with_config, FormatterConfig};
 use std::{fs, time::Instant};
 
-const ITERATIONS: u16 = 100;
+const ITERATIONS: u16 = 40;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let short_content = fs::read_to_string("benchmarks/gdscript_files/short.gd")?;
@@ -45,8 +45,40 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     let long_time = start.elapsed();
 
+    // Benchmark with safe mode enabled
+    let safe_config = FormatterConfig {
+        safe: true,
+        ..config
+    };
+
+    println!(
+        "Benchmarking short file with safe mode ({} iterations)...",
+        ITERATIONS
+    );
+    start = Instant::now();
+    for _ in 0..ITERATIONS {
+        let _ = format_gdscript_with_config(&short_content, &safe_config)?;
+    }
+    let duration_short_file_safe = start.elapsed();
+
+    println!(
+        "Benchmarking long file with safe mode ({} iterations)...",
+        ITERATIONS
+    );
+    start = Instant::now();
+    for _ in 0..ITERATIONS {
+        let _ = format_gdscript_with_config(&long_content, &safe_config)?;
+    }
+    let long_time_safe = start.elapsed();
+
     let average_time_short = duration_short_file.as_micros() as f64 / ITERATIONS as f64;
     let average_time_long = long_time.as_micros() as f64 / ITERATIONS as f64;
+    let average_time_safe_short = duration_short_file_safe.as_micros() as f64 / ITERATIONS as f64;
+    let average_time_safe_long = long_time_safe.as_micros() as f64 / ITERATIONS as f64;
+
+    let short_slowdown =
+        ((average_time_safe_short - average_time_short) / average_time_short) * 100.0;
+    let long_slowdown = ((average_time_safe_long - average_time_long) / average_time_long) * 100.0;
 
     println!("\nBenchmark Results:");
     println!("=================");
@@ -61,6 +93,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ITERATIONS,
         long_time,
         average_time_long / 1000.0
+    );
+    println!(
+        "Short file with safe mode ({} iterations): {:?} (avg: {:.2}ms per iteration, {:.1}% slower)",
+        ITERATIONS,
+        duration_short_file_safe,
+        average_time_safe_short / 1000.0,
+        short_slowdown
+    );
+    println!(
+        "Long file with safe mode ({} iterations):   {:?} (avg: {:.2}ms per iteration, {:.1}% slower)",
+        ITERATIONS,
+        long_time_safe,
+        average_time_safe_long / 1000.0,
+        long_slowdown
     );
 
     Ok(())

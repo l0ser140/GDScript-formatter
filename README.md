@@ -24,6 +24,12 @@ To format a file, run:
 gdscript-format path/to/file.gd
 ```
 
+Use the `--safe` flag to add a safety check that prevents overwriting files if the formatter makes unwanted changes (any change that would modify the code meaning, like removing a piece of functional code). This is useful when you use a development version of the formatter or when you want to be extra careful:
+
+```bash
+gdscript-format --safe path/to/file.gd
+```
+
 Format with check mode, to use in a build system (exit code 1 if changes needed):
 
 ```bash
