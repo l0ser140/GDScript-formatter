@@ -239,47 +239,69 @@ impl Formatter {
     /// This uses tree-sitter to find the relevant nodes and their positions.
     fn handle_two_blank_line(tree: &mut Tree, content: &mut String) {
         let root = tree.root_node();
-        let sibling_definition_query = match Query::new(
-            &tree_sitter::Language::new(tree_sitter_gdscript::LANGUAGE),
-            "(([(variable_statement) (function_definition) (class_definition) (signal_statement) (const_statement) (enum_definition) (constructor_definition)]) @first
-    . (([(comment) (annotation)])* @comment . ([(function_definition) (constructor_definition) (class_definition)]) @second))",
-        ) {
-            Ok(q) => q,
-            Err(err) => {
-                panic!("Failed to create query: {}", err);
-            }
-        };
+        let queries = [
+            // We need two queries to catch all cases because variables can be placed above or below functions
+            // First query: variable, function, class, signal, const, enum followed by function, constructor, class, or variable
+            //
+            // NOTE: Nathan (GDQuest): This adds maybe 20-25% runtime to the program.
+            // I tried 2 other implementations by having a single query that'd find only functions, classes, and constructors and add 2 new lines between them.
+            // But the costly part is in accounting for comments and annotations between them. This solution ends up being slightly faster and simpler.
+            // Still, this is probably something that can be made faster in the future.
+            "(([(variable_statement) (function_definition) (class_definition) (signal_statement) (const_statement) (enum_definition) (constructor_definition)]) @first \
+            . (([(comment) (annotation)])* @comment . ([(function_definition) (constructor_definition) (class_definition)]) @second))",
+            // Second query: constructor or function followed by variable, signal, const, or enum
+            "(([(constructor_definition) (function_definition) (class_definition)]) @first \
+            . ([(variable_statement) (signal_statement) (const_statement) (enum_definition)]) @second)",
+        ];
+
+        let process_query =
+            |query_str: &str, new_lines_at: &mut Vec<(usize, tree_sitter::Point)>| {
+                let query = match Query::new(
+                    &tree_sitter::Language::new(tree_sitter_gdscript::LANGUAGE),
+                    query_str,
+                ) {
+                    Ok(q) => q,
+                    Err(err) => {
+                        panic!("Failed to create query: {}", err);
+                    }
+                };
+
+                let mut cursor = QueryCursor::new();
+                let mut matches = cursor.matches(&query, root, content.as_bytes());
+                while let Some(m) = matches.next() {
+                    let first_node = m.captures[0].node;
+                    if m.captures.len() == 3 {
+                        let comment_node = m.captures[1].node;
+                        let second_node = m.captures[2].node;
+                        // If the @comment is on the same line as the first node,
+                        // we'll add a blank line before the @second node
+                        if comment_node.start_position().row == first_node.start_position().row {
+                            // Find where to insert the new line (before any indentation)
+                            let mut byte_idx = second_node.start_byte();
+                            let mut position = second_node.start_position();
+                            position.column = 0;
+                            while content.as_bytes()[byte_idx] != b'\n' {
+                                byte_idx -= 1;
+                            }
+                            new_lines_at.push((byte_idx, position));
+                        } else {
+                            // Otherwise, add a blank line after the first node
+                            new_lines_at.push((first_node.end_byte(), first_node.end_position()));
+                        }
+                    } else {
+                        // If there's no comment between the nodes, add a blank line after the first node
+                        new_lines_at.push((first_node.end_byte(), first_node.end_position()));
+                    }
+                }
+            };
 
         // First we need to find all the places where we should add blank lines.
         // We can't modify the content string while tree-sitter is borrowing it, so we
         // collect all the positions first, then make changes afterward.
         let mut new_lines_at = Vec::new();
-        let mut cursor = QueryCursor::new();
-        let mut matches = cursor.matches(&sibling_definition_query, root, content.as_bytes());
-        while let Some(m) = matches.next() {
-            let first_node = m.captures[0].node;
-            if m.captures.len() == 3 {
-                let comment_node = m.captures[1].node;
-                let second_node = m.captures[2].node;
-                // If the @comment is on the same line as the first node,
-                // we'll add a blank line before the @second node
-                if comment_node.start_position().row == first_node.start_position().row {
-                    // Find where to insert the new line (before any indentation)
-                    let mut byte_idx = second_node.start_byte();
-                    let mut position = second_node.start_position();
-                    position.column = 0;
-                    while content.as_bytes()[byte_idx] != b'\n' {
-                        byte_idx -= 1;
-                    }
-                    new_lines_at.push((byte_idx, position));
-                } else {
-                    // Otherwise, add a blank line after the first node
-                    new_lines_at.push((first_node.end_byte(), first_node.end_position()));
-                }
-            } else {
-                // If there's no comment between the nodes, add a blank line after the first node
-                new_lines_at.push((first_node.end_byte(), first_node.end_position()));
-            }
+
+        for query_str in &queries {
+            process_query(query_str, &mut new_lines_at);
         }
 
         // We sort the positions in reverse order so that when we insert new lines,

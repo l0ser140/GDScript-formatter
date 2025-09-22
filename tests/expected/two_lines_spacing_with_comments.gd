@@ -5,11 +5,13 @@ var a
 func test2() -> void:
 	pass
 
+
 var a # case 2
 
 
 func test2() -> void:
 	pass
+
 
 var a
 
@@ -17,11 +19,15 @@ var a
 func test2() -> void:
 	pass
 
+
 const a = 10
 
 
 func test2() -> void:
 	pass
+
+
+var x = 10
 
 
 class CheckSameCasesInsideNestedClass:
@@ -32,17 +38,20 @@ class CheckSameCasesInsideNestedClass:
 	func test2() -> void:
 		pass
 
+
 	var a # case 2
 
 
 	func test2() -> void:
 		pass
 
+
 	var a
 
 
 	func test2() -> void:
 		pass
+
 
 	const a = 10
 
