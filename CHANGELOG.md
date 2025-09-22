@@ -2,6 +2,22 @@
 
 This file documents the changes made to the formatter with each release. This project uses [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
+## Release 0.8.0 (2025-09-22)
+
+This release adds a safe mode to help make the formatter more resilient, and adds configuration instructions to integrate it into Zed, Helix, and JetBrains Rider.
+
+### Added
+
+- Syntax tree verification option (`--safe`) to catch formatting issues early
+- Instructions to integrate the formatter into JetBrains Rider
+- Two blank lines between functions/inner classes and following variable, signal, enum, or constant declarations
+
+### Fixed
+
+- Space after bitwise NOT being incorrectly added
+- Comma placement after multiline arrays
+- Trailing comma being added to multiline preload calls (GDScript does not support trailing commas in this case)
+
 ## Release 0.7.1 (2025-09-21)
 
 This release brings two hotfixes and adds configuration instructions for two editors.
