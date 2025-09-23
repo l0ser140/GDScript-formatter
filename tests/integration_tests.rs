@@ -1,4 +1,5 @@
-use gdscript_formatter::formatter::format_gdscript;
+use gdscript_formatter::formatter::{format_gdscript, format_gdscript_with_config};
+use gdscript_formatter::FormatterConfig;
 use similar::{ChangeTag, TextDiff};
 use std::fs;
 use std::path::Path;
@@ -55,6 +56,29 @@ fn test_file(file_path: &Path) {
 
     let result = format_gdscript(&input_content)
         .expect(&format!("Failed to format {}", input_path.display()));
+
+    assert_formatted_eq(&result, &expected_content, &input_path);
+}
+
+#[test]
+#[ignore]
+fn code_ordering() {
+    let input_path = Path::new("tests/code_order/sample_unordered.gd");
+    let expected_path = Path::new("tests/code_order/sample_ordered.gd");
+
+    let input_content =
+        fs::read_to_string(&input_path).expect(&format!("Failed to read {}", input_path.display()));
+    let expected_content = fs::read_to_string(&expected_path)
+        .expect(&format!("Failed to read {}", expected_path.display()));
+
+    let result = format_gdscript_with_config(
+        &input_content,
+        &FormatterConfig {
+            reorder_code: true,
+            ..Default::default()
+        },
+    )
+    .expect(&format!("Failed to format {}", input_path.display()));
 
     assert_formatted_eq(&result, &expected_content, &input_path);
 }
