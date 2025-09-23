@@ -32,7 +32,7 @@ pub fn format_gdscript_with_config(
 ) -> Result<String, Box<dyn std::error::Error>> {
     let mut formatter = Formatter::new(content.to_owned(), config.clone());
 
-    formatter.preprocess().format()?.postprocess().reorder();
+    formatter.preprocess().format()?.postprocess();
     formatter.finish()
 }
 
@@ -100,11 +100,13 @@ impl Formatter {
     }
 
     #[inline(always)]
-    fn reorder(&mut self) -> &mut Self {
+    fn reorder(&mut self, mut tree: Tree) -> &mut Self {
         if !self.config.reorder_code {
             return self;
         }
-        match crate::reorder::reorder_gdscript_elements(&self.content) {
+
+        tree = self.parser.parse(&self.content, Some(&tree)).unwrap();
+        match crate::reorder::reorder_gdscript_elements(&tree, &self.content) {
             Ok(reordered) => {
                 self.content = reordered;
             }
@@ -256,6 +258,8 @@ impl Formatter {
         let mut tree = self.parser.parse(&self.content, None).unwrap();
 
         Self::handle_two_blank_line(&mut tree, &mut self.content);
+
+        self.reorder(tree);
 
         self
     }
