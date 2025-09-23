@@ -11,19 +11,10 @@ use tree_sitter::{Node, Query, QueryCursor, StreamingIterator, Tree};
 
 /// This method parses the GDScript content, extracts top-level elements,
 /// and reorders them according to the GDScript style guide.
-pub fn reorder_gdscript_elements(content: &str) -> Result<String, Box<dyn std::error::Error>> {
-    let mut parser = tree_sitter::Parser::new();
-    parser
-        .set_language(&tree_sitter_gdscript::LANGUAGE.into())
-        .unwrap();
-
-    let tree = match parser.parse(content, None) {
-        Some(tree) => tree,
-        None => {
-            return Ok(content.to_string());
-        }
-    };
-
+pub fn reorder_gdscript_elements(
+    tree: &Tree,
+    content: &str,
+) -> Result<String, Box<dyn std::error::Error>> {
     let tokens = extract_tokens_to_reorder(&tree, content)?;
     let ordered_elements = sort_gdscript_tokens(tokens);
     let reordered_content = build_reordered_code(ordered_elements, content);

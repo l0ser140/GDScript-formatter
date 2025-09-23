@@ -15,8 +15,8 @@
 use std::io::BufWriter;
 
 use regex::RegexBuilder;
-use topiary_core::{formatter, Language, Operation, TopiaryQuery};
-use tree_sitter::{Query, QueryCursor, StreamingIterator, Tree};
+use topiary_core::{formatter_tree, Language, Operation, TopiaryQuery};
+use tree_sitter::{Parser, Point, Query, QueryCursor, StreamingIterator, Tree};
 
 use crate::FormatterConfig;
 
@@ -32,34 +32,33 @@ pub fn format_gdscript_with_config(
 ) -> Result<String, Box<dyn std::error::Error>> {
     let mut formatter = Formatter::new(content.to_owned(), config.clone());
 
-    formatter.preprocess().format()?.postprocess().reorder();
+    formatter.preprocess().format()?.postprocess();
     formatter.finish()
 }
 
 struct Formatter {
     content: String,
     config: FormatterConfig,
-    input_tree: Option<Tree>,
+    parser: Parser,
+    input_tree: Tree,
+    output_tree: Option<Tree>,
 }
 
 impl Formatter {
     #[inline(always)]
     fn new(content: String, config: FormatterConfig) -> Self {
-        // Save original syntax tree for verification
-        let input_tree = if config.safe {
-            let mut parser = tree_sitter::Parser::new();
-            parser
-                .set_language(&tree_sitter_gdscript::LANGUAGE.into())
-                .unwrap();
-            Some(parser.parse(&content, None).unwrap())
-        } else {
-            None
-        };
+        let mut parser = tree_sitter::Parser::new();
+        parser
+            .set_language(&tree_sitter_gdscript::LANGUAGE.into())
+            .unwrap();
+        let input_tree = parser.parse(&content, None).unwrap();
 
         Self {
             content,
             config,
             input_tree,
+            parser,
+            output_tree: None,
         }
     }
 
@@ -78,12 +77,12 @@ impl Formatter {
             indent: Some(indent_string),
         };
 
-        let mut input = self.content.as_bytes();
         let mut output = Vec::new();
         let mut writer = BufWriter::new(&mut output);
 
-        formatter(
-            &mut input,
+        formatter_tree(
+            self.input_tree.clone().into(),
+            &self.content,
             &mut writer,
             &language,
             Operation::Format {
@@ -102,11 +101,13 @@ impl Formatter {
     }
 
     #[inline(always)]
-    fn reorder(&mut self) -> &mut Self {
+    fn reorder(&mut self, tree: &mut Tree) -> &mut Self {
         if !self.config.reorder_code {
             return self;
         }
-        match crate::reorder::reorder_gdscript_elements(&self.content) {
+
+        *tree = self.parser.parse(&self.content, Some(&tree)).unwrap();
+        match crate::reorder::reorder_gdscript_elements(&tree, &self.content) {
             Ok(reordered) => {
                 self.content = reordered;
             }
@@ -139,16 +140,12 @@ impl Formatter {
 
     /// Finishes formatting and returns the resulting file content.
     #[inline(always)]
-    fn finish(self) -> Result<String, Box<dyn std::error::Error>> {
-        // This will be Some if config.safe is true
-        if let Some(input_tree) = self.input_tree {
-            let mut parser = tree_sitter::Parser::new();
-            parser
-                .set_language(&tree_sitter_gdscript::LANGUAGE.into())
-                .unwrap();
-            let tree = parser.parse(&self.content, None).unwrap();
+    fn finish(mut self) -> Result<String, Box<dyn std::error::Error>> {
+        if self.config.safe {
+            let mut tree = self.output_tree.unwrap();
+            tree = self.parser.parse(&self.content, Some(&tree)).unwrap();
 
-            if !compare_trees(input_tree, tree) {
+            if !compare_trees(self.input_tree, tree) {
                 return Err("Trees are different".into());
             }
         }
@@ -171,9 +168,47 @@ impl Formatter {
         .multi_line(true)
         .build()
         .expect("regex should compile");
-        self.content = re
-            .replace(&self.content, "$extends_line$extends_name\n")
-            .to_string();
+
+        let mut locations = re.capture_locations();
+
+        // We manually remove new lines to inform the tree which lines were changed
+        if let Some(_) = re.captures_read(&mut locations, &self.content) {
+            let new_lines_bounds = locations.get(4).unwrap();
+
+            fn find_position(s: &str, end_byte: usize) -> Point {
+                let mut position = Point::new(0, 0);
+                for b in &s.as_bytes()[..end_byte] {
+                    if *b == b'\n' {
+                        position.column = 0;
+                        position.row += 1;
+                    } else {
+                        position.column += 1;
+                    }
+                }
+                position
+            }
+
+            let start_byte = new_lines_bounds.0;
+            let end_byte = new_lines_bounds.1;
+            let start_position = find_position(&self.content, start_byte);
+            let old_end_position = find_position(&self.content, end_byte);
+
+            self.content.replace_range(start_byte..end_byte, "");
+
+            self.input_tree.edit(&tree_sitter::InputEdit {
+                start_byte,
+                old_end_byte: end_byte,
+                new_end_byte: start_byte,
+                start_position,
+                old_end_position,
+                new_end_position: start_position,
+            });
+
+            self.input_tree = self
+                .parser
+                .parse(&self.content, Some(&self.input_tree))
+                .unwrap();
+        }
         self
     }
 
@@ -221,13 +256,13 @@ impl Formatter {
     /// This function runs postprocess passes that uses tree-sitter.
     #[inline(always)]
     fn postprocess_tree_sitter(&mut self) -> &mut Self {
-        let mut parser = tree_sitter::Parser::new();
-        parser
-            .set_language(&tree_sitter_gdscript::LANGUAGE.into())
-            .unwrap();
-        let mut tree = parser.parse(&self.content, None).unwrap();
+        let mut tree = self.parser.parse(&self.content, None).unwrap();
 
         Self::handle_two_blank_line(&mut tree, &mut self.content);
+
+        self.reorder(&mut tree);
+
+        self.output_tree = Some(tree);
 
         self
     }
