@@ -2,6 +2,21 @@
 
 This file documents the changes made to the formatter with each release. This project uses [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
+## Release 0.8.1 (2025-09-23)
+
+### Changed
+
+- Shifted to a fork of the GDScript parser to allow addressing upstream issues sooner
+
+### Fixed
+
+- Incorrect formatting of functions defined inline with class definitions
+- Space added in function parameter type inference
+- Support for annotations in match patterns
+- Support for conditional expressions in match statements
+- Comments sometimes being aligned to the previous line indentation level instead of the current one in functions and classes
+- Definitions inline with a class definition not being wrapped to a new line
+
 ## Release 0.8.0 (2025-09-22)
 
 This release adds a safe mode to help make the formatter more resilient, and adds configuration instructions to integrate it into Zed, Helix, and JetBrains Rider.
