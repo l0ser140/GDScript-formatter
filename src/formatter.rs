@@ -32,7 +32,7 @@ pub fn format_gdscript_with_config(
 ) -> Result<String, Box<dyn std::error::Error>> {
     let mut formatter = Formatter::new(content.to_owned(), config.clone());
 
-    formatter.preprocess().format()?.postprocess();
+    formatter.preprocess().format()?.postprocess().reorder();
     formatter.finish()
 }
 
@@ -41,7 +41,7 @@ struct Formatter {
     config: FormatterConfig,
     parser: Parser,
     input_tree: Tree,
-    output_tree: Option<Tree>,
+    tree: Tree,
 }
 
 impl Formatter {
@@ -56,9 +56,9 @@ impl Formatter {
         Self {
             content,
             config,
+            tree: input_tree.clone(),
             input_tree,
             parser,
-            output_tree: None,
         }
     }
 
@@ -81,7 +81,7 @@ impl Formatter {
         let mut writer = BufWriter::new(&mut output);
 
         formatter_tree(
-            self.input_tree.clone().into(),
+            self.tree.clone().into(),
             &self.content,
             &mut writer,
             &language,
@@ -101,13 +101,13 @@ impl Formatter {
     }
 
     #[inline(always)]
-    fn reorder(&mut self, tree: &mut Tree) -> &mut Self {
+    fn reorder(&mut self) -> &mut Self {
         if !self.config.reorder_code {
             return self;
         }
 
-        *tree = self.parser.parse(&self.content, Some(&tree)).unwrap();
-        match crate::reorder::reorder_gdscript_elements(&tree, &self.content) {
+        self.tree = self.parser.parse(&self.content, Some(&self.tree)).unwrap();
+        match crate::reorder::reorder_gdscript_elements(&self.tree, &self.content) {
             Ok(reordered) => {
                 self.content = reordered;
             }
@@ -142,10 +142,9 @@ impl Formatter {
     #[inline(always)]
     fn finish(mut self) -> Result<String, Box<dyn std::error::Error>> {
         if self.config.safe {
-            let mut tree = self.output_tree.unwrap();
-            tree = self.parser.parse(&self.content, Some(&tree)).unwrap();
+            self.tree = self.parser.parse(&self.content, Some(&self.tree)).unwrap();
 
-            if !compare_trees(self.input_tree, tree) {
+            if !compare_trees(self.input_tree, self.tree) {
                 return Err("Trees are different".into());
             }
         }
@@ -195,7 +194,7 @@ impl Formatter {
 
             self.content.replace_range(start_byte..end_byte, "");
 
-            self.input_tree.edit(&tree_sitter::InputEdit {
+            self.tree.edit(&tree_sitter::InputEdit {
                 start_byte,
                 old_end_byte: end_byte,
                 new_end_byte: start_byte,
@@ -204,10 +203,7 @@ impl Formatter {
                 new_end_position: start_position,
             });
 
-            self.input_tree = self
-                .parser
-                .parse(&self.content, Some(&self.input_tree))
-                .unwrap();
+            self.tree = self.parser.parse(&self.content, Some(&self.tree)).unwrap();
         }
         self
     }
@@ -256,13 +252,9 @@ impl Formatter {
     /// This function runs postprocess passes that uses tree-sitter.
     #[inline(always)]
     fn postprocess_tree_sitter(&mut self) -> &mut Self {
-        let mut tree = self.parser.parse(&self.content, None).unwrap();
+        self.tree = self.parser.parse(&self.content, None).unwrap();
 
-        Self::handle_two_blank_line(&mut tree, &mut self.content);
-
-        self.reorder(&mut tree);
-
-        self.output_tree = Some(tree);
+        Self::handle_two_blank_line(&mut self.tree, &mut self.content);
 
         self
     }
