@@ -41,6 +41,7 @@ struct Formatter {
     config: FormatterConfig,
     parser: Parser,
     input_tree: Tree,
+    postprocess_tree: Option<Tree>,
 }
 
 impl Formatter {
@@ -58,6 +59,7 @@ impl Formatter {
             config,
             input_tree,
             parser,
+            postprocess_tree: None,
         }
     }
 
@@ -100,12 +102,12 @@ impl Formatter {
     }
 
     #[inline(always)]
-    fn reorder(&mut self, mut tree: Tree) -> &mut Self {
+    fn reorder(&mut self, tree: &mut Tree) -> &mut Self {
         if !self.config.reorder_code {
             return self;
         }
 
-        tree = self.parser.parse(&self.content, Some(&tree)).unwrap();
+        *tree = self.parser.parse(&self.content, Some(&tree)).unwrap();
         match crate::reorder::reorder_gdscript_elements(&tree, &self.content) {
             Ok(reordered) => {
                 self.content = reordered;
@@ -142,7 +144,8 @@ impl Formatter {
     fn finish(mut self) -> Result<String, Box<dyn std::error::Error>> {
         // This will be Some if config.safe is true
         if self.config.safe {
-            let tree = self.parser.parse(&self.content, None).unwrap();
+            let mut tree = self.postprocess_tree.unwrap();
+            tree = self.parser.parse(&self.content, Some(&tree)).unwrap();
 
             if !compare_trees(self.input_tree, tree) {
                 return Err("Trees are different".into());
@@ -259,7 +262,9 @@ impl Formatter {
 
         Self::handle_two_blank_line(&mut tree, &mut self.content);
 
-        self.reorder(tree);
+        self.reorder(&mut tree);
+
+        self.postprocess_tree = Some(tree);
 
         self
     }
