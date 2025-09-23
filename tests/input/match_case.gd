@@ -10,6 +10,11 @@ func foo():
 		_   :
 			pass
 	match 0:
+		# Warnings and comments should be preserved
 		@warning_ignore("unreachable_pattern")
 		0 when true:
 			print("true")
+	match 5:
+		# Conditional expression should be supported
+		0 if true else 2:
+			pass
