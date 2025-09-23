@@ -16,7 +16,7 @@ use std::io::BufWriter;
 
 use regex::RegexBuilder;
 use topiary_core::{formatter_tree, Language, Operation, TopiaryQuery};
-use tree_sitter::{Point, Query, QueryCursor, StreamingIterator, Tree};
+use tree_sitter::{Parser, Point, Query, QueryCursor, StreamingIterator, Tree};
 
 use crate::FormatterConfig;
 
@@ -39,6 +39,7 @@ pub fn format_gdscript_with_config(
 struct Formatter {
     content: String,
     config: FormatterConfig,
+    parser: Parser,
     input_tree: Tree,
 }
 
@@ -46,18 +47,17 @@ impl Formatter {
     #[inline(always)]
     fn new(content: String, config: FormatterConfig) -> Self {
         // Save original syntax tree for verification
-        let input_tree = {
-            let mut parser = tree_sitter::Parser::new();
-            parser
-                .set_language(&tree_sitter_gdscript::LANGUAGE.into())
-                .unwrap();
-            parser.parse(&content, None).unwrap()
-        };
+        let mut parser = tree_sitter::Parser::new();
+        parser
+            .set_language(&tree_sitter_gdscript::LANGUAGE.into())
+            .unwrap();
+        let input_tree = parser.parse(&content, None).unwrap();
 
         Self {
             content,
             config,
             input_tree,
+            parser,
         }
     }
 
@@ -137,14 +137,10 @@ impl Formatter {
 
     /// Finishes formatting and returns the resulting file content.
     #[inline(always)]
-    fn finish(self) -> Result<String, Box<dyn std::error::Error>> {
+    fn finish(mut self) -> Result<String, Box<dyn std::error::Error>> {
         // This will be Some if config.safe is true
         if self.config.safe {
-            let mut parser = tree_sitter::Parser::new();
-            parser
-                .set_language(&tree_sitter_gdscript::LANGUAGE.into())
-                .unwrap();
-            let tree = parser.parse(&self.content, None).unwrap();
+            let tree = self.parser.parse(&self.content, None).unwrap();
 
             if !compare_trees(self.input_tree, tree) {
                 return Err("Trees are different".into());
@@ -205,11 +201,10 @@ impl Formatter {
                 new_end_position: start_position,
             });
 
-            let mut parser = tree_sitter::Parser::new();
-            parser
-                .set_language(&tree_sitter_gdscript::LANGUAGE.into())
+            self.input_tree = self
+                .parser
+                .parse(&self.content, Some(&self.input_tree))
                 .unwrap();
-            self.input_tree = parser.parse(&self.content, Some(&self.input_tree)).unwrap();
         }
         self
     }
@@ -258,11 +253,7 @@ impl Formatter {
     /// This function runs postprocess passes that uses tree-sitter.
     #[inline(always)]
     fn postprocess_tree_sitter(&mut self) -> &mut Self {
-        let mut parser = tree_sitter::Parser::new();
-        parser
-            .set_language(&tree_sitter_gdscript::LANGUAGE.into())
-            .unwrap();
-        let mut tree = parser.parse(&self.content, None).unwrap();
+        let mut tree = self.parser.parse(&self.content, None).unwrap();
 
         Self::handle_two_blank_line(&mut tree, &mut self.content);
 
