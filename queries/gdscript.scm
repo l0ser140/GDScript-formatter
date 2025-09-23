@@ -16,7 +16,8 @@
 (string) @leaf
 (string_name) @leaf
 (node_path) @leaf
-(region) @leaf
+(region_start) @leaf
+(region_end) @leaf
 
 ; TYPE ANNOTATION SPACING
 (typed_parameter ":" @append_space)
@@ -79,8 +80,8 @@
 (parameters (([(typed_parameter) (typed_default_parameter) (identifier) (default_parameter)]) @append_delimiter (#delimiter! ",") . ","? @do_nothing . (comment)? . ")") (#multi_line_only!))
 
 ; CLASS DEFINITIONS
-(class_definition (body) @prepend_hardline @append_hardline)
-(class_definition (body (extends_statement) @append_hardline ))
+(class_definition (class_body) @prepend_hardline @append_hardline)
+(class_definition (class_body (extends_statement) @append_hardline ))
 (class_name_statement) @append_space
 (class_definition) @prepend_hardline
 (source
@@ -147,14 +148,13 @@
 
 ; Make sure the body of control structures is indented (the preprended and
 ; appended indents target the body)
-((body) @prepend_indent_start @append_indent_end)
+([(body) (class_body)] @prepend_indent_start @append_indent_end)
 
 ([(return_statement)
   (pass_statement)
   (breakpoint_statement)
   (break_statement)
   (continue_statement)
-  (tool_statement)
   (enum_definition)
   (const_statement)
   (signal_statement)
@@ -176,7 +176,6 @@
   (breakpoint_statement)
   (break_statement)
   (continue_statement)
-  (tool_statement)
   (enum_definition)
   (const_statement)
   (signal_statement)

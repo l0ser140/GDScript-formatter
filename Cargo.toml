@@ -10,7 +10,7 @@ default-run = "gdscript-formatter"
 [dependencies]
 clap = { version = "4.0", features = ["derive"] }
 topiary-core = "0.6"
-tree-sitter-gdscript  = { git = "https://github.com/PrestonKnopp/tree-sitter-gdscript.git", rev = "9686853b696db07118ad110e440d6de0ca6498b4" }
+tree-sitter-gdscript  = { git = "https://github.com/NathanLovato/tree-sitter-gdscript.git", branch = "gdquest/GDScript-formatter" }
 regex = "1.11"
 tree-sitter = "0.25.9"
 
