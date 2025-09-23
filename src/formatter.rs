@@ -41,13 +41,12 @@ struct Formatter {
     config: FormatterConfig,
     parser: Parser,
     input_tree: Tree,
-    postprocess_tree: Option<Tree>,
+    output_tree: Option<Tree>,
 }
 
 impl Formatter {
     #[inline(always)]
     fn new(content: String, config: FormatterConfig) -> Self {
-        // Save original syntax tree for verification
         let mut parser = tree_sitter::Parser::new();
         parser
             .set_language(&tree_sitter_gdscript::LANGUAGE.into())
@@ -59,7 +58,7 @@ impl Formatter {
             config,
             input_tree,
             parser,
-            postprocess_tree: None,
+            output_tree: None,
         }
     }
 
@@ -142,9 +141,8 @@ impl Formatter {
     /// Finishes formatting and returns the resulting file content.
     #[inline(always)]
     fn finish(mut self) -> Result<String, Box<dyn std::error::Error>> {
-        // This will be Some if config.safe is true
         if self.config.safe {
-            let mut tree = self.postprocess_tree.unwrap();
+            let mut tree = self.output_tree.unwrap();
             tree = self.parser.parse(&self.content, Some(&tree)).unwrap();
 
             if !compare_trees(self.input_tree, tree) {
@@ -264,7 +262,7 @@ impl Formatter {
 
         self.reorder(&mut tree);
 
-        self.postprocess_tree = Some(tree);
+        self.output_tree = Some(tree);
 
         self
     }
