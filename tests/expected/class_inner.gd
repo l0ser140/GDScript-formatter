@@ -43,3 +43,8 @@ class A:
 class B:
 	extends A
 	var test = 2
+
+
+class C:
+	func test(x):
+		print(x)
