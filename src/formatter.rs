@@ -12,10 +12,10 @@
 //!
 //! Some of the post-processing is outside of Topiary's capabilities, while other
 //! rules have too much performance overhead when applied through Topiary.
-use std::io::BufWriter;
+use std::{borrow::Cow, io::BufWriter};
 
 use regex::RegexBuilder;
-use topiary_core::{formatter_tree, Language, Operation, TopiaryQuery};
+use topiary_core::{Language, Operation, TopiaryQuery, formatter_tree};
 use tree_sitter::{Parser, Point, Query, QueryCursor, StreamingIterator, Tree};
 
 use crate::FormatterConfig;
@@ -217,7 +217,9 @@ impl Formatter {
             .multi_line(true)
             .build()
             .expect("empty line regex should compile");
-        self.content = re.replace_all(&self.content, "\n").to_string();
+        if let Cow::Owned(replaced) = re.replace_all(&self.content, "\n") {
+            self.content = replaced;
+        }
         self
     }
 
@@ -232,7 +234,9 @@ impl Formatter {
             .multi_line(true)
             .build()
             .expect("semicolon regex should compile");
-        self.content = re_trailing.replace_all(&self.content, "").to_string();
+        if let Cow::Owned(replaced) = re_trailing.replace_all(&self.content, "") {
+            self.content = replaced;
+        }
         self
     }
 
@@ -245,7 +249,9 @@ impl Formatter {
             .build()
             .expect("preload regex should compile");
 
-        self.content = re.replace_all(&self.content, "preload($1$2)").to_string();
+        if let Cow::Owned(replaced) = re.replace_all(&self.content, "preload($1$2)") {
+            self.content = replaced;
+        }
         self
     }
 
@@ -254,9 +260,7 @@ impl Formatter {
     fn postprocess_tree_sitter(&mut self) -> &mut Self {
         self.tree = self.parser.parse(&self.content, None).unwrap();
 
-        Self::handle_two_blank_line(&mut self.tree, &mut self.content);
-
-        self
+        self.handle_two_blank_line()
     }
 
     /// This function makes sure we have the correct vertical spacing between important definitions:
@@ -264,8 +268,8 @@ impl Formatter {
     /// comments or docstrings into account.
     ///
     /// This uses tree-sitter to find the relevant nodes and their positions.
-    fn handle_two_blank_line(tree: &mut Tree, content: &mut String) {
-        let root = tree.root_node();
+    fn handle_two_blank_line(&mut self) -> &mut Self {
+        let root = self.tree.root_node();
         let queries = [
             // We need two queries to catch all cases because variables can be placed above or below functions
             // First query: variable, function, class, signal, const, enum followed by function, constructor, class, or variable
@@ -294,7 +298,7 @@ impl Formatter {
                 };
 
                 let mut cursor = QueryCursor::new();
-                let mut matches = cursor.matches(&query, root, content.as_bytes());
+                let mut matches = cursor.matches(&query, root, self.content.as_bytes());
                 while let Some(m) = matches.next() {
                     let first_node = m.captures[0].node;
                     if m.captures.len() == 3 {
@@ -307,7 +311,7 @@ impl Formatter {
                             let mut byte_idx = second_node.start_byte();
                             let mut position = second_node.start_position();
                             position.column = 0;
-                            while content.as_bytes()[byte_idx] != b'\n' {
+                            while self.content.as_bytes()[byte_idx] != b'\n' {
                                 byte_idx -= 1;
                             }
                             new_lines_at.push((byte_idx, position));
@@ -339,19 +343,19 @@ impl Formatter {
             let mut new_end_position = position;
             let mut new_end_byte_idx = byte_idx;
             // Only add a second blank line if there isn't already one
-            if content.as_bytes()[byte_idx + 1] != b'\n' {
+            if self.content.as_bytes()[byte_idx + 1] != b'\n' {
                 new_end_position.row += 1;
                 new_end_byte_idx += 1;
-                content.insert(byte_idx, '\n');
+                self.content.insert(byte_idx, '\n');
             }
             // Add the first blank line
             new_end_position.row += 1;
             new_end_byte_idx += 1;
-            content.insert(byte_idx, '\n');
+            self.content.insert(byte_idx, '\n');
 
             // Update the tree sitter parse tree to reflect our changes so that any
             // future processing will work with the correct positions
-            tree.edit(&tree_sitter::InputEdit {
+            self.tree.edit(&tree_sitter::InputEdit {
                 start_byte: byte_idx,
                 old_end_byte: byte_idx,
                 new_end_byte: new_end_byte_idx,
@@ -360,6 +364,7 @@ impl Formatter {
                 new_end_position,
             });
         }
+        self
     }
 }
 
