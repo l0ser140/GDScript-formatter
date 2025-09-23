@@ -9,7 +9,7 @@ default-run = "gdscript-formatter"
 
 [dependencies]
 clap = { version = "4.0", features = ["derive"] }
-topiary-core = "0.6"
+topiary-core = { git = "https://github.com/tweag/topiary", rev = "5081ccef9245fe56c2b3e2a7ced52277eda45825" }
 tree-sitter-gdscript  = { git = "https://github.com/NathanLovato/tree-sitter-gdscript.git", branch = "gdquest/GDScript-formatter" }
 regex = "1.11"
 tree-sitter = "0.25.10"
