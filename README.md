@@ -45,7 +45,11 @@ To see other possible options, run `gdscript-format` without any arguments.
 
 ### Zed
 
-First, install the [zed-gdscript](https://github.com/GDQuest/zed-gdscript) extension. This is needed to ensure that the formatter will only format GDScript files. Once installed, add the following JSON configuration to your `settings.json` file:
+1. Install the formatter (see instructions above).
+
+2. Install [zed-gdscript](https://github.com/GDQuest/zed-gdscript) extension. This is needed to ensure that the formatter will only format GDScript files.
+
+3. After installing the extension, add the following JSON configuration to your `settings.json` file:
 
 ```json
 {
@@ -53,7 +57,8 @@ First, install the [zed-gdscript](https://github.com/GDQuest/zed-gdscript) exten
     "GDScript": {
       "formatter": {
         "external": {
-          "command": "gdscript-format"
+          "command": "gdscript-format",
+          "arguments": []
         }
       }
     }
@@ -61,7 +66,13 @@ First, install the [zed-gdscript](https://github.com/GDQuest/zed-gdscript) exten
 }
 ```
 
-If you renamed the binary to something else, adjust the `command` name accordingly. Once this is done, Zed will run the formatter every time you save a GDScript file. If this doesn't happen, ensure that the `format_on_save` setting in `settings.json` is set to `true` (this is the default). You can also format manually by executing `editor: format` command in Zed.
+4. If you renamed the binary to something else during installation, adjust the `command` name accordingly. It can also be a full path to the binary.
+
+5. `arguments` is a comma separated list of flags. For example, to enable code reordering and use spaces instead of tabs, replace `[]` with `["--reorder-code", "--use-spaces"]`.
+
+Once this is done, you can start using the formatter. By default Zed will run the formatter every time you save a file. If don't want this to happen, set the `format_on_save` setting in `settings.json` to `false`. To format manually, execute the `editor: format` command in Zed.
+
+As a reminder: **don't leave this on when working on an important project without using a VCS!**.
 
 ### Helix
 
