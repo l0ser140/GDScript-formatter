@@ -12,9 +12,9 @@
 //!
 //! Some of the post-processing is outside of Topiary's capabilities, while other
 //! rules have too much performance overhead when applied through Topiary.
-use std::{borrow::Cow, io::BufWriter};
+use std::io::BufWriter;
 
-use regex::RegexBuilder;
+use regex::{Regex, RegexBuilder};
 use topiary_core::{Language, Operation, TopiaryQuery, formatter_tree};
 use tree_sitter::{Parser, Point, Query, QueryCursor, StreamingIterator, Tree};
 
@@ -132,8 +132,7 @@ impl Formatter {
     /// to clean up/balance out the output.
     #[inline(always)]
     fn postprocess(&mut self) -> &mut Self {
-        self.clean_up_lines_with_only_whitespace()
-            .fix_dangling_semicolons()
+        self.fix_dangling_semicolons()
             .fix_dangling_commas()
             .remove_trailing_commas_from_preload()
             .postprocess_tree_sitter()
@@ -169,58 +168,7 @@ impl Formatter {
         .build()
         .expect("regex should compile");
 
-        let mut locations = re.capture_locations();
-
-        // We manually remove new lines to inform the tree which lines were changed
-        if let Some(_) = re.captures_read(&mut locations, &self.content) {
-            let new_lines_bounds = locations.get(4).unwrap();
-
-            fn find_position(s: &str, end_byte: usize) -> Point {
-                let mut position = Point::new(0, 0);
-                for b in &s.as_bytes()[..end_byte] {
-                    if *b == b'\n' {
-                        position.column = 0;
-                        position.row += 1;
-                    } else {
-                        position.column += 1;
-                    }
-                }
-                position
-            }
-
-            let start_byte = new_lines_bounds.0;
-            let end_byte = new_lines_bounds.1;
-            let start_position = find_position(&self.content, start_byte);
-            let old_end_position = find_position(&self.content, end_byte);
-
-            self.content.replace_range(start_byte..end_byte, "");
-
-            self.tree.edit(&tree_sitter::InputEdit {
-                start_byte,
-                old_end_byte: end_byte,
-                new_end_byte: start_byte,
-                start_position,
-                old_end_position,
-                new_end_position: start_position,
-            });
-
-            self.tree = self.parser.parse(&self.content, Some(&self.tree)).unwrap();
-        }
-        self
-    }
-
-    /// This function cleans up lines that contain only whitespace characters
-    /// (spaces, tabs) and a newline character. It only keeps a single newline
-    /// character.
-    #[inline(always)]
-    fn clean_up_lines_with_only_whitespace(&mut self) -> &mut Self {
-        let re = RegexBuilder::new(r"^\s+\n$")
-            .multi_line(true)
-            .build()
-            .expect("empty line regex should compile");
-        if let Cow::Owned(replaced) = re.replace_all(&self.content, "\n") {
-            self.content = replaced;
-        }
+        self.regex_replace_all_outside_strings(re, "$extends_line$extends_name\n");
         self
     }
 
@@ -235,9 +183,8 @@ impl Formatter {
             .multi_line(true)
             .build()
             .expect("semicolon regex should compile");
-        if let Cow::Owned(replaced) = re_trailing.replace_all(&self.content, "") {
-            self.content = replaced;
-        }
+
+        self.regex_replace_all_outside_strings(re_trailing, "");
         self
     }
 
@@ -254,9 +201,8 @@ impl Formatter {
             .multi_line(true)
             .build()
             .expect("dangling comma regex should compile");
-        if let Cow::Owned(replaced) = re.replace_all(&self.content, "$1,") {
-            self.content = replaced;
-        }
+
+        self.regex_replace_all_outside_strings(re, "$1,");
         self
     }
 
@@ -269,9 +215,7 @@ impl Formatter {
             .build()
             .expect("preload regex should compile");
 
-        if let Cow::Owned(replaced) = re.replace_all(&self.content, "preload($1$2)") {
-            self.content = replaced;
-        }
+        self.regex_replace_all_outside_strings(re, "preload($1$2)");
         self
     }
 
@@ -281,6 +225,71 @@ impl Formatter {
         self.tree = self.parser.parse(&self.content, None).unwrap();
 
         self.handle_two_blank_line()
+    }
+
+    /// Replaces every match of regex `re` with `rep`, but only if the match is
+    /// outside of strings (simple or multiline).
+    /// Use this to make post-processing changes needed for formatting but that
+    /// shouldn't affect strings in the source code.
+    fn regex_replace_all_outside_strings(&mut self, re: Regex, rep: &str) {
+        let mut iter = re.captures_iter(&self.content).peekable();
+        if iter.peek().is_none() {
+            return;
+        }
+
+        let mut new = String::new();
+        let mut last_match = 0;
+        let mut start_position = Point::new(0, 0);
+
+        // We first collect tree edits and then apply them, because regex returns positions from unmodified content
+        let mut edits = Vec::new();
+
+        for capture in iter {
+            let m = capture.get(0).unwrap();
+            let start_byte = m.start();
+            let old_end_byte = m.end();
+            let node = self
+                .tree
+                .root_node()
+                .descendant_for_byte_range(start_byte, start_byte)
+                .unwrap();
+            if node.kind() == "string" {
+                continue;
+            }
+
+            let mut replacement = String::new();
+            capture.expand(rep, &mut replacement);
+
+            let new_end_byte = start_byte + replacement.len();
+
+            let slice = &self.content[last_match..start_byte];
+            start_position = calculate_end_position(start_position, slice);
+            let old_end_position =
+                calculate_end_position(start_position, &self.content[start_byte..old_end_byte]);
+            let new_end_position = calculate_end_position(start_position, &replacement);
+            new.push_str(slice);
+            new.push_str(&replacement);
+            last_match = old_end_byte;
+
+            edits.push(tree_sitter::InputEdit {
+                start_byte,
+                old_end_byte,
+                new_end_byte,
+                start_position,
+                old_end_position,
+                new_end_position,
+            });
+
+            start_position = old_end_position;
+        }
+
+        new.push_str(&self.content[last_match..]);
+        self.content = new;
+
+        for edit in edits {
+            self.tree.edit(&edit);
+        }
+        self.tree = self.parser.parse(&self.content, Some(&self.tree)).unwrap();
     }
 
     /// This function makes sure we have the correct vertical spacing between important definitions:
@@ -386,6 +395,19 @@ impl Formatter {
         }
         self
     }
+}
+
+/// Calculates end position of the `slice` counting from `start`
+fn calculate_end_position(mut start: Point, slice: &str) -> Point {
+    for b in slice.as_bytes() {
+        if *b == b'\n' {
+            start.row += 1;
+            start.column = 0;
+        } else {
+            start.column += 1;
+        }
+    }
+    start
 }
 
 /// Returns true if both trees have the same structure.
