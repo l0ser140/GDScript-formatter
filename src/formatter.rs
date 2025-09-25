@@ -169,16 +169,7 @@ impl Formatter {
         .build()
         .expect("regex should compile");
 
-        if let Cow::Owned(replaced) = Self::replace_all_not_in_string(
-            &self.content,
-            &mut self.tree,
-            re,
-            "$extends_line$extends_name\n",
-        ) {
-            self.content = replaced;
-            self.tree = self.parser.parse(&self.content, Some(&self.tree)).unwrap();
-        }
-
+        self.replace_all_not_in_string(re, "$extends_line$extends_name\n");
         self
     }
 
@@ -208,12 +199,8 @@ impl Formatter {
             .multi_line(true)
             .build()
             .expect("semicolon regex should compile");
-        if let Cow::Owned(replaced) =
-            Self::replace_all_not_in_string(&self.content, &mut self.tree, re_trailing, "")
-        {
-            self.content = replaced;
-            self.tree = self.parser.parse(&self.content, Some(&self.tree)).unwrap();
-        }
+
+        self.replace_all_not_in_string(re_trailing, "");
         self
     }
 
@@ -231,12 +218,7 @@ impl Formatter {
             .build()
             .expect("dangling comma regex should compile");
 
-        if let Cow::Owned(replaced) =
-            Self::replace_all_not_in_string(&self.content, &mut self.tree, re, "$1,")
-        {
-            self.content = replaced;
-            self.tree = self.parser.parse(&self.content, Some(&self.tree)).unwrap();
-        }
+        self.replace_all_not_in_string(re, "$1,");
         self
     }
 
@@ -249,12 +231,7 @@ impl Formatter {
             .build()
             .expect("preload regex should compile");
 
-        if let Cow::Owned(replaced) =
-            Self::replace_all_not_in_string(&self.content, &mut self.tree, re, "preload($1$2)")
-        {
-            self.content = replaced;
-            self.tree = self.parser.parse(&self.content, Some(&self.tree)).unwrap();
-        }
+        self.replace_all_not_in_string(re, "preload($1$2)");
         self
     }
 
@@ -266,15 +243,10 @@ impl Formatter {
         self.handle_two_blank_line()
     }
 
-    fn replace_all_not_in_string<'s>(
-        content: &'s String,
-        tree: &mut Tree,
-        re: Regex,
-        rep: &str,
-    ) -> Cow<'s, str> {
-        let mut iter = re.captures_iter(&content).peekable();
+    fn replace_all_not_in_string<'s>(&mut self, re: Regex, rep: &str) {
+        let mut iter = re.captures_iter(&self.content).peekable();
         if iter.peek().is_none() {
-            return Cow::Borrowed(content);
+            return;
         }
 
         let mut new = String::new();
@@ -288,7 +260,8 @@ impl Formatter {
             let m = capture.get(0).unwrap();
             let start_byte = m.start();
             let old_end_byte = m.end();
-            let node = tree
+            let node = self
+                .tree
                 .root_node()
                 .descendant_for_byte_range(start_byte, start_byte)
                 .unwrap();
@@ -301,10 +274,10 @@ impl Formatter {
 
             let new_end_byte = start_byte + replacement.len();
 
-            let slice = &content[last_match..start_byte];
+            let slice = &self.content[last_match..start_byte];
             start_position = calculate_end_position(start_position, slice);
             let old_end_position =
-                calculate_end_position(start_position, &content[start_byte..old_end_byte]);
+                calculate_end_position(start_position, &self.content[start_byte..old_end_byte]);
             let new_end_position = calculate_end_position(start_position, &replacement);
             new.push_str(slice);
             new.push_str(&replacement);
@@ -322,12 +295,13 @@ impl Formatter {
             start_position = old_end_position;
         }
 
-        for edit in edits {
-            tree.edit(&edit);
-        }
+        new.push_str(&self.content[last_match..]);
+        self.content = new;
 
-        new.push_str(&content[last_match..]);
-        Cow::Owned(new)
+        for edit in edits {
+            self.tree.edit(&edit);
+        }
+        self.tree = self.parser.parse(&self.content, Some(&self.tree)).unwrap();
     }
 
     /// This function makes sure we have the correct vertical spacing between important definitions:
