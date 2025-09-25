@@ -1,6 +1,6 @@
 use std::{
     env, fs,
-    io::{self, IsTerminal, Write},
+    io::{self, IsTerminal, Read, Write},
     path::PathBuf,
 };
 
@@ -85,6 +85,28 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         reorder_code: args.reorder_code,
         safe: args.safe,
     };
+
+    if args.input.is_empty() {
+        let mut input_content = String::new();
+        io::stdin()
+            .read_to_string(&mut input_content)
+            .map_err(|error| format!("Failed to read from stdin: {}", error))?;
+
+        let formatted_content = format_gdscript_with_config(&input_content, &config)?;
+
+        if args.check {
+            if input_content != formatted_content {
+                eprintln!("The input passed via stdin is not formatted");
+                std::process::exit(1);
+            } else {
+                println!("The input passed via stdin is already formatted");
+            }
+        } else {
+            print!("{}", formatted_content);
+        }
+
+        return Ok(());
+    }
 
     let input_gdscript_files: Vec<&PathBuf> = args
         .input
