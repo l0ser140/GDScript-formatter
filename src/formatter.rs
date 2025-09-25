@@ -243,7 +243,7 @@ impl Formatter {
         self.handle_two_blank_line()
     }
 
-    fn replace_all_not_in_string<'s>(&mut self, re: Regex, rep: &str) {
+    fn replace_all_not_in_string(&mut self, re: Regex, rep: &str) {
         let mut iter = re.captures_iter(&self.content).peekable();
         if iter.peek().is_none() {
             return;
