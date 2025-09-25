@@ -1,12 +1,12 @@
 use std::{
     env, fs,
-    io::{self, IsTerminal, Read},
+    io::{self, IsTerminal, Write},
     path::PathBuf,
 };
 
 use clap::{CommandFactory, Parser};
 
-use gdscript_formatter::{formatter::format_gdscript_with_config, FormatterConfig};
+use gdscript_formatter::{FormatterConfig, formatter::format_gdscript_with_config};
 
 #[derive(Parser)]
 #[clap(
@@ -19,14 +19,16 @@ use gdscript_formatter::{formatter::format_gdscript_with_config, FormatterConfig
 )]
 struct Args {
     #[arg(
-        help = "Input GDScript file to format. If no file path is provided, the program reads from standard input and outputs to standard output.",
-        value_name = "FILE"
+        help = "Input GDScript file(s) to format. If no file path is provided, the program reads from standard input and outputs to standard output.",
+        value_name = "FILES"
     )]
-    input: Option<PathBuf>,
+    input: Vec<PathBuf>,
     #[arg(
         long,
         help = "Output formatted code to stdout instead of overwriting the input file. \
-        This flag is ignored when reading from stdin (stdout is always used)"
+        If multiple input files are provided, each file's content is preceded by a comment indicating the file name, with the form \
+        #--file:<file_path> \
+        This flag is ignored when reading from stdin (stdout is always used)."
     )]
     stdout: bool,
     #[arg(
@@ -77,18 +79,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let args = Args::parse();
 
-    let input_content = match &args.input {
-        Some(file_path) => fs::read_to_string(file_path)
-            .map_err(|e| format!("Failed to read file {}: {}", file_path.display(), e))?,
-        None => {
-            let mut buffer = String::new();
-            io::stdin()
-                .read_to_string(&mut buffer)
-                .map_err(|e| format!("Failed to read from stdin: {}", e))?;
-            buffer
-        }
-    };
-
     let config = FormatterConfig {
         indent_size: args.indent_size,
         use_spaces: args.use_spaces,
@@ -96,28 +86,72 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         safe: args.safe,
     };
 
-    let formatted_content = format_gdscript_with_config(&input_content, &config)?;
+    let input_gdscript_files: Vec<&PathBuf> = args
+        .input
+        .iter()
+        .filter(|path| path.extension().map_or(false, |ext| ext == "gd"))
+        .collect();
 
-    if args.check {
-        if input_content != formatted_content {
-            eprintln!("The file is not formatted");
-            std::process::exit(1);
-        }
-        println!("File is formatted");
-    } else {
-        match (args.input.as_ref(), args.stdout) {
-            // If we're reading from a file without the --stdout flag: we overwrite the input file
-            (Some(input_file), false) => {
-                fs::write(input_file, formatted_content).map_err(|e| {
-                    format!("Failed to write to file {}: {}", input_file.display(), e)
-                })?;
+    if input_gdscript_files.is_empty() {
+        eprintln!(
+            "Error: No GDScript files found in the arguments provided. Please provide at least one .gd file."
+        );
+        std::process::exit(1);
+    }
+
+    let total_files = input_gdscript_files.len();
+    let mut all_formatted = true;
+
+    for (index, file_path) in input_gdscript_files.iter().enumerate() {
+        let file_number = index + 1;
+        terminal_clear_line();
+        print!("\rFormatting file {}/{}", file_number, total_files);
+        io::stdout().flush().unwrap();
+
+        let input_content = fs::read_to_string(file_path)
+            .map_err(|error| format!("Failed to read file {}: {}", file_path.display(), error))?;
+
+        let formatted_content = format_gdscript_with_config(&input_content, &config)?;
+
+        if args.check {
+            if input_content != formatted_content {
+                all_formatted = false;
             }
-            // Otherwise we output to stdout
-            _ => {
-                print!("{}", formatted_content);
+        } else if args.stdout {
+            // Clear the current line before printing formatted files to stdout, to erase the "Formatting file ..." message
+            terminal_clear_line();
+            // If there are multiple input files we still allow stdout but we print a separator
+            if total_files > 1 {
+                println!("#--file:{}", file_path.display());
             }
+            print!("{}", formatted_content);
+        } else {
+            fs::write(file_path, formatted_content)
+                .map_err(|e| format!("Failed to write to file {}: {}", file_path.display(), e))?;
         }
     }
 
+    if args.check {
+        if all_formatted {
+            terminal_clear_line();
+            println!("\rAll {} file(s) are formatted", total_files);
+        } else {
+            terminal_clear_line();
+            eprintln!("\rSome files are not formatted");
+            std::process::exit(1);
+        }
+    } else if !args.stdout {
+        terminal_clear_line();
+        println!(
+            "\rFormatted {} file{}",
+            total_files,
+            if total_files == 1 { "" } else { "s" }
+        );
+    }
+
     Ok(())
+}
+
+fn terminal_clear_line() {
+    print!("\r{}", " ".repeat(80));
 }
