@@ -168,7 +168,7 @@ impl Formatter {
         .build()
         .expect("regex should compile");
 
-        self.replace_all_not_in_string(re, "$extends_line$extends_name\n");
+        self.regex_replace_all_outside_strings(re, "$extends_line$extends_name\n");
         self
     }
 
@@ -184,7 +184,7 @@ impl Formatter {
             .build()
             .expect("semicolon regex should compile");
 
-        self.replace_all_not_in_string(re_trailing, "");
+        self.regex_replace_all_outside_strings(re_trailing, "");
         self
     }
 
@@ -202,7 +202,7 @@ impl Formatter {
             .build()
             .expect("dangling comma regex should compile");
 
-        self.replace_all_not_in_string(re, "$1,");
+        self.regex_replace_all_outside_strings(re, "$1,");
         self
     }
 
@@ -215,7 +215,7 @@ impl Formatter {
             .build()
             .expect("preload regex should compile");
 
-        self.replace_all_not_in_string(re, "preload($1$2)");
+        self.regex_replace_all_outside_strings(re, "preload($1$2)");
         self
     }
 
@@ -227,7 +227,11 @@ impl Formatter {
         self.handle_two_blank_line()
     }
 
-    fn replace_all_not_in_string(&mut self, re: Regex, rep: &str) {
+    /// Replaces every match of regex `re` with `rep`, but only if the match is
+    /// outside of strings (simple or multiline).
+    /// Use this to make post-processing changes needed for formatting but that
+    /// shouldn't affect strings in the source code.
+    fn regex_replace_all_outside_strings(&mut self, re: Regex, rep: &str) {
         let mut iter = re.captures_iter(&self.content).peekable();
         if iter.peek().is_none() {
             return;
