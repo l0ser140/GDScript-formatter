@@ -76,13 +76,14 @@ jobs:
           fi
         shell: bash
 
-      - name: Compress (Linux and macOS)
-        if: matrix.os != 'windows-latest'
-        run: tar -czf ${{ matrix.name }}.tar.gz ${{ matrix.name }}
-
-      - name: Compress (Windows)
-        if: matrix.os == 'windows-latest'
-        run: 7z a ${{ matrix.name }}.zip ${{ matrix.name }}
+      - name: Compress to ZIP (All platforms)
+        run: |
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            7z a ${{ matrix.name }}.zip ${{ matrix.name }}
+          else
+            zip ${{ matrix.name }}.zip ${{ matrix.name }}
+          fi
+        shell: bash
 
       - name: Create/Update Release
         uses: softprops/action-gh-release@v2
@@ -91,7 +92,6 @@ jobs:
           body: |
             A fast code formatter for GDScript in Godot 4.
           files: |
-            *.tar.gz
             *.zip
           draft: false
           prerelease: false
