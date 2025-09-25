@@ -134,6 +134,7 @@ impl Formatter {
     fn postprocess(&mut self) -> &mut Self {
         self.clean_up_lines_with_only_whitespace()
             .fix_dangling_semicolons()
+            .fix_dangling_commas()
             .remove_trailing_commas_from_preload()
             .postprocess_tree_sitter()
     }
@@ -235,6 +236,25 @@ impl Formatter {
             .build()
             .expect("semicolon regex should compile");
         if let Cow::Owned(replaced) = re_trailing.replace_all(&self.content, "") {
+            self.content = replaced;
+        }
+        self
+    }
+
+    /// This function fixes commas that end up on their own line with indentation
+    /// by moving them to the end of the previous line. This commonly happens
+    /// with lambdas in data structures like arrays or function arguments.
+    #[inline(always)]
+    fn fix_dangling_commas(&mut self) -> &mut Self {
+        // This targets cases where a comma is on its own line with only
+        // whitespace before it instead of being at the end of the previous
+        // line
+        // Pattern: capture content before newline, then newline + whitespace + comma
+        let re = RegexBuilder::new(r"([^\n\r])\n\s+,")
+            .multi_line(true)
+            .build()
+            .expect("dangling comma regex should compile");
+        if let Cow::Owned(replaced) = re.replace_all(&self.content, "$1,") {
             self.content = replaced;
         }
         self
