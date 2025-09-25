@@ -5,8 +5,21 @@ use std::{
 };
 
 use clap::{CommandFactory, Parser};
+use rayon::prelude::*;
 
 use gdscript_formatter::{FormatterConfig, formatter::format_gdscript_with_config};
+
+/// This struct is used to hold all the information about the result when
+/// formatting a single file. Now that we use parallel processing, we need to
+/// keep track of the original index to order the files in the output when
+/// printing results.
+#[derive(Debug, Clone)]
+struct FormatterOutput {
+    index: usize,
+    file_path: PathBuf,
+    formatted_content: String,
+    is_formatted: bool,
+}
 
 #[derive(Parser)]
 #[clap(
@@ -122,37 +135,84 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let total_files = input_gdscript_files.len();
+
+    eprint!(
+        "Formatting {} file{}...",
+        total_files,
+        if total_files == 1 { "" } else { "s" }
+    );
+    io::stdout().flush().unwrap();
+
+    // We use the rayon library to automatically process files in parallel for
+    // us. The formatter runs largely single threaded so this speeds things up a
+    // lot on multi-core CPUs
+    let outputs: Vec<Result<FormatterOutput, String>> = input_gdscript_files
+        .par_iter()
+        .enumerate()
+        .map(|(index, file_path)| {
+            let input_content = fs::read_to_string(file_path).map_err(|error| {
+                format!("Failed to read file {}: {}", file_path.display(), error)
+            })?;
+
+            let formatted_content =
+                format_gdscript_with_config(&input_content, &config).map_err(|error| {
+                    format!("Failed to format file {}: {}", file_path.display(), error)
+                })?;
+
+            let is_formatted = input_content == formatted_content;
+
+            Ok(FormatterOutput {
+                index,
+                file_path: (*file_path).clone(),
+                formatted_content,
+                is_formatted,
+            })
+        })
+        .collect();
+
+    // Restore the original order of the input files based on their initial index
+    let mut sorted_outputs: Vec<_> = outputs.into_iter().collect();
+    sorted_outputs.sort_by_key(|output| {
+        match output {
+            Ok(output) => output.index,
+            // Sort errors at the end in no particular order
+            Err(_) => usize::MAX,
+        }
+    });
+
+    // If true, all input files were already formatted (used for check mode)
     let mut all_formatted = true;
-
-    for (index, file_path) in input_gdscript_files.iter().enumerate() {
-        let file_number = index + 1;
-        terminal_clear_line();
-        eprint!("\rFormatting file {}/{}", file_number, total_files);
-        io::stdout().flush().unwrap();
-
-        let input_content = fs::read_to_string(file_path)
-            .map_err(|error| format!("Failed to read file {}: {}", file_path.display(), error))?;
-
-        let formatted_content = format_gdscript_with_config(&input_content, &config)?;
-
-        if args.check {
-            if input_content != formatted_content {
-                all_formatted = false;
+    for output in sorted_outputs {
+        match output {
+            Ok(output) => {
+                if args.check {
+                    if !output.is_formatted {
+                        all_formatted = false;
+                    }
+                } else if args.stdout {
+                    // Clear the progress message before printing formatted files to stdout
+                    terminal_clear_line();
+                    // A little bit hacky, but because terminals by default output both stdout and stderr
+                    // we need to return carriage to the start to print formatted output from the start of the line
+                    eprint!("\r");
+                    // If there are multiple input files we still allow stdout but we print a separator
+                    if total_files > 1 {
+                        println!("#--file:{}", output.file_path.display());
+                    }
+                    print!("{}", output.formatted_content);
+                } else {
+                    fs::write(&output.file_path, output.formatted_content).map_err(|e| {
+                        format!(
+                            "Failed to write to file {}: {}",
+                            output.file_path.display(),
+                            e
+                        )
+                    })?;
+                }
             }
-        } else if args.stdout {
-            // Clear the current line before printing formatted files to stdout, to erase the "Formatting file ..." message
-            terminal_clear_line();
-            // A little bit hacky, but because terminals by default output both stdout and stderr
-            // we need to return carriage to the start to print formatted output from the start of the line
-            eprint!("\r");
-            // If there are multiple input files we still allow stdout but we print a separator
-            if total_files > 1 {
-                println!("#--file:{}", file_path.display());
+            Err(error_msg) => {
+                return Err(error_msg.into());
             }
-            print!("{}", formatted_content);
-        } else {
-            fs::write(file_path, formatted_content)
-                .map_err(|e| format!("Failed to write to file {}: {}", file_path.display(), e))?;
         }
     }
 

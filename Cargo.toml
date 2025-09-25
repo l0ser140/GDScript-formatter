@@ -1,6 +1,6 @@
 [package]
 name = "gdscript-formatter"
-version = "0.8.1"
+version = "0.9.0"
 edition = "2024"
 description = "A GDScript code formatter using Topiary and Tree-sitter"
 license = "MIT"
@@ -13,6 +13,7 @@ topiary-core = { git = "https://github.com/tweag/topiary", rev = "5081ccef9245fe
 tree-sitter-gdscript  = { git = "https://github.com/NathanLovato/tree-sitter-gdscript.git", branch = "gdquest/GDScript-formatter" }
 regex = "1.11"
 tree-sitter = "0.25.10"
+rayon = "1.11.0"
 
 [dev-dependencies]
 test_each_file = "0.3.5"
