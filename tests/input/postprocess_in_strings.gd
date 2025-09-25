@@ -15,3 +15,6 @@ func _ready() -> void:
 	var trailing_comma_in_preload = """
 	preload("",)
 	"""
+	var trailing_whitespaces_in_multiline_strings = """
+	      
+	"""

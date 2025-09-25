@@ -12,7 +12,7 @@
 //!
 //! Some of the post-processing is outside of Topiary's capabilities, while other
 //! rules have too much performance overhead when applied through Topiary.
-use std::{borrow::Cow, io::BufWriter};
+use std::io::BufWriter;
 
 use regex::{Regex, RegexBuilder};
 use topiary_core::{Language, Operation, TopiaryQuery, formatter_tree};
@@ -132,8 +132,7 @@ impl Formatter {
     /// to clean up/balance out the output.
     #[inline(always)]
     fn postprocess(&mut self) -> &mut Self {
-        self.clean_up_lines_with_only_whitespace()
-            .fix_dangling_semicolons()
+        self.fix_dangling_semicolons()
             .fix_dangling_commas()
             .remove_trailing_commas_from_preload()
             .postprocess_tree_sitter()
@@ -170,21 +169,6 @@ impl Formatter {
         .expect("regex should compile");
 
         self.replace_all_not_in_string(re, "$extends_line$extends_name\n");
-        self
-    }
-
-    /// This function cleans up lines that contain only whitespace characters
-    /// (spaces, tabs) and a newline character. It only keeps a single newline
-    /// character.
-    #[inline(always)]
-    fn clean_up_lines_with_only_whitespace(&mut self) -> &mut Self {
-        let re = RegexBuilder::new(r"^\s+\n$")
-            .multi_line(true)
-            .build()
-            .expect("empty line regex should compile");
-        if let Cow::Owned(replaced) = re.replace_all(&self.content, "\n") {
-            self.content = replaced;
-        }
         self
     }
 
