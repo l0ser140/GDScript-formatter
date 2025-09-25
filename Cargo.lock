@@ -327,6 +327,7 @@ name = "gdscript-formatter"
 version = "0.8.1"
 dependencies = [
  "clap",
+ "rayon",
  "regex",
  "similar",
  "test_each_file",
