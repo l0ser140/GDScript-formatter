@@ -99,7 +99,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 eprintln!("The input passed via stdin is not formatted");
                 std::process::exit(1);
             } else {
-                println!("The input passed via stdin is already formatted");
+                eprintln!("The input passed via stdin is already formatted");
             }
         } else {
             print!("{}", formatted_content);
@@ -127,7 +127,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     for (index, file_path) in input_gdscript_files.iter().enumerate() {
         let file_number = index + 1;
         terminal_clear_line();
-        print!("\rFormatting file {}/{}", file_number, total_files);
+        eprint!("\rFormatting file {}/{}", file_number, total_files);
         io::stdout().flush().unwrap();
 
         let input_content = fs::read_to_string(file_path)
@@ -142,6 +142,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         } else if args.stdout {
             // Clear the current line before printing formatted files to stdout, to erase the "Formatting file ..." message
             terminal_clear_line();
+            // A little bit hacky, but because terminals by default output both stdout and stderr
+            // we need to return carriage to the start to print formatted output from the start of the line
+            eprint!("\r");
             // If there are multiple input files we still allow stdout but we print a separator
             if total_files > 1 {
                 println!("#--file:{}", file_path.display());
@@ -156,7 +159,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if args.check {
         if all_formatted {
             terminal_clear_line();
-            println!("\rAll {} file(s) are formatted", total_files);
+            eprintln!("\rAll {} file(s) are formatted", total_files);
         } else {
             terminal_clear_line();
             eprintln!("\rSome files are not formatted");
@@ -164,7 +167,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     } else if !args.stdout {
         terminal_clear_line();
-        println!(
+        eprintln!(
             "\rFormatted {} file{}",
             total_files,
             if total_files == 1 { "" } else { "s" }
@@ -175,5 +178,5 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn terminal_clear_line() {
-    print!("\r{}", " ".repeat(80));
+    eprint!("\r{}", " ".repeat(80));
 }
