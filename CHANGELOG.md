@@ -2,6 +2,28 @@
 
 This file documents the changes made to the formatter with each release. This project uses [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
+## Release 0.9.0 (2025-09-25)
+
+This release focuses on performance improvements and adds support for formatting multiple files at once.
+
+### Added
+
+- Support for formatting multiple files at once
+- Multi-threading when formatting multiple files for better performance
+
+### Changed
+
+- Improved performance on long GDScript files by 5 to 10%
+- Don't parse code multiple times when using `--safe` flag
+- Reuse parser instances and trees to reduce memory allocations
+- Updated dependencies to latest versions
+- Updated Zed editor configuration instructions
+
+### Fixed
+
+- Fixed commas ending up dangling on separate lines in some cases (after lambdas in function calls, arrays, and dictionaries)
+- Don't modify original syntax tree for safety checks
+
 ## Release 0.8.1 (2025-09-23)
 
 ### Changed
