@@ -14,7 +14,7 @@
 //! rules have too much performance overhead when applied through Topiary.
 use std::{borrow::Cow, io::BufWriter};
 
-use regex::RegexBuilder;
+use regex::{Regex, RegexBuilder};
 use topiary_core::{Language, Operation, TopiaryQuery, formatter_tree};
 use tree_sitter::{Parser, Point, Query, QueryCursor, StreamingIterator, Tree};
 
@@ -169,43 +169,16 @@ impl Formatter {
         .build()
         .expect("regex should compile");
 
-        let mut locations = re.capture_locations();
-
-        // We manually remove new lines to inform the tree which lines were changed
-        if let Some(_) = re.captures_read(&mut locations, &self.content) {
-            let new_lines_bounds = locations.get(4).unwrap();
-
-            fn find_position(s: &str, end_byte: usize) -> Point {
-                let mut position = Point::new(0, 0);
-                for b in &s.as_bytes()[..end_byte] {
-                    if *b == b'\n' {
-                        position.column = 0;
-                        position.row += 1;
-                    } else {
-                        position.column += 1;
-                    }
-                }
-                position
-            }
-
-            let start_byte = new_lines_bounds.0;
-            let end_byte = new_lines_bounds.1;
-            let start_position = find_position(&self.content, start_byte);
-            let old_end_position = find_position(&self.content, end_byte);
-
-            self.content.replace_range(start_byte..end_byte, "");
-
-            self.tree.edit(&tree_sitter::InputEdit {
-                start_byte,
-                old_end_byte: end_byte,
-                new_end_byte: start_byte,
-                start_position,
-                old_end_position,
-                new_end_position: start_position,
-            });
-
+        if let Cow::Owned(replaced) = Self::replace_all_not_in_string(
+            &self.content,
+            &mut self.tree,
+            re,
+            "$extends_line$extends_name\n",
+        ) {
+            self.content = replaced;
             self.tree = self.parser.parse(&self.content, Some(&self.tree)).unwrap();
         }
+
         self
     }
 
@@ -235,8 +208,11 @@ impl Formatter {
             .multi_line(true)
             .build()
             .expect("semicolon regex should compile");
-        if let Cow::Owned(replaced) = re_trailing.replace_all(&self.content, "") {
+        if let Cow::Owned(replaced) =
+            Self::replace_all_not_in_string(&self.content, &mut self.tree, re_trailing, "")
+        {
             self.content = replaced;
+            self.tree = self.parser.parse(&self.content, Some(&self.tree)).unwrap();
         }
         self
     }
@@ -254,8 +230,12 @@ impl Formatter {
             .multi_line(true)
             .build()
             .expect("dangling comma regex should compile");
-        if let Cow::Owned(replaced) = re.replace_all(&self.content, "$1,") {
+
+        if let Cow::Owned(replaced) =
+            Self::replace_all_not_in_string(&self.content, &mut self.tree, re, "$1,")
+        {
             self.content = replaced;
+            self.tree = self.parser.parse(&self.content, Some(&self.tree)).unwrap();
         }
         self
     }
@@ -269,8 +249,11 @@ impl Formatter {
             .build()
             .expect("preload regex should compile");
 
-        if let Cow::Owned(replaced) = re.replace_all(&self.content, "preload($1$2)") {
+        if let Cow::Owned(replaced) =
+            Self::replace_all_not_in_string(&self.content, &mut self.tree, re, "preload($1$2)")
+        {
             self.content = replaced;
+            self.tree = self.parser.parse(&self.content, Some(&self.tree)).unwrap();
         }
         self
     }
@@ -281,6 +264,70 @@ impl Formatter {
         self.tree = self.parser.parse(&self.content, None).unwrap();
 
         self.handle_two_blank_line()
+    }
+
+    fn replace_all_not_in_string<'s>(
+        content: &'s String,
+        tree: &mut Tree,
+        re: Regex,
+        rep: &str,
+    ) -> Cow<'s, str> {
+        let mut iter = re.captures_iter(&content).peekable();
+        if iter.peek().is_none() {
+            return Cow::Borrowed(content);
+        }
+
+        let mut new = String::new();
+        let mut last_match = 0;
+        let mut start_position = Point::new(0, 0);
+
+        // We first collect tree edits and then apply them, because regex returns positions from unmodified content
+        let mut edits = Vec::new();
+
+        for capture in iter {
+            let m = capture.get(0).unwrap();
+            let start_byte = m.start();
+            let old_end_byte = m.end();
+            let node = tree
+                .root_node()
+                .descendant_for_byte_range(start_byte, start_byte)
+                .unwrap();
+            if node.kind() == "string" {
+                continue;
+            }
+
+            let mut replacement = String::new();
+            capture.expand(rep, &mut replacement);
+
+            let new_end_byte = start_byte + replacement.len();
+
+            let slice = &content[last_match..start_byte];
+            start_position = calculate_end_position(start_position, slice);
+            let old_end_position =
+                calculate_end_position(start_position, &content[start_byte..old_end_byte]);
+            let new_end_position = calculate_end_position(start_position, &replacement);
+            new.push_str(slice);
+            new.push_str(&replacement);
+            last_match = old_end_byte;
+
+            edits.push(tree_sitter::InputEdit {
+                start_byte,
+                old_end_byte,
+                new_end_byte,
+                start_position,
+                old_end_position,
+                new_end_position,
+            });
+
+            start_position = old_end_position;
+        }
+
+        for edit in edits {
+            tree.edit(&edit);
+        }
+
+        new.push_str(&content[last_match..]);
+        Cow::Owned(new)
     }
 
     /// This function makes sure we have the correct vertical spacing between important definitions:
@@ -386,6 +433,19 @@ impl Formatter {
         }
         self
     }
+}
+
+/// Calculates end position of the `slice` counting from `start`
+fn calculate_end_position(mut start: Point, slice: &str) -> Point {
+    for b in slice.as_bytes() {
+        if *b == b'\n' {
+            start.row += 1;
+            start.column = 0;
+        } else {
+            start.column += 1;
+        }
+    }
+    start
 }
 
 /// Returns true if both trees have the same structure.
