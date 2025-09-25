@@ -2,6 +2,25 @@
 
 This file documents the changes made to the formatter with each release. This project uses [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
+## Release 0.9.1 (2025-09-25)
+
+This is a minor release that adds Nix support and fixes several edge cases with output formatting and comma handling. It also prepares for support for the formatter from within Godot.
+
+### Added
+
+- Nix flake support to use the formatter on NixOS
+
+### Changed
+
+- Release artifacts now only include zip files instead of both zip and tar.gz (this is needed to support auto-install in Godot)
+- Removed cleanup for lines containing only whitespace
+
+### Fixed
+
+- Progress messages appearing in output when using the `--stdout` option
+- Dangling commas sometimes being incorrectly moved inside strings
+- Various edge cases in post-processing formatting
+
 ## Release 0.9.0 (2025-09-25)
 
 This release focuses on performance improvements and adds support for formatting multiple files at once.
