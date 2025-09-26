@@ -9,6 +9,7 @@
 extends EditorPlugin
 
 const FormatterInstaller = preload("install_and_update.gd")
+const FormatterMenu = preload("menu.gd")
 
 const EDITOR_SETTINGS_CATEGORY = "gdquest_gdscript_formatter/"
 const SETTING_FORMAT_ON_SAVE = "format_on_save"
@@ -37,6 +38,7 @@ const DEFAULT_SETTINGS = {
 var connection_list: Array[Resource] = []
 var installer: FormatterInstaller = null
 var formatter_cache_dir: String
+var menu: FormatterMenu = null
 
 
 func _init() -> void:
@@ -69,6 +71,9 @@ func _enter_tree() -> void:
 			add_format_command()
 			remove_uninstall_command()
 			add_uninstall_command()
+			# After installing the formatter we can add the menu option to show the uninstall command
+			if is_instance_valid(menu):
+				menu.update_menu(true)
 	)
 	installer.installation_failed.connect(
 		func _on_installation_failed(error_message: String) -> void:
@@ -79,6 +84,12 @@ func _enter_tree() -> void:
 	add_install_update_command()
 	add_uninstall_command()
 	add_report_issue_command()
+
+	menu = FormatterMenu.new()
+	add_child(menu)
+	menu.menu_item_selected.connect(_on_menu_item_selected)
+	menu.update_menu(is_formatter_installed_locally())
+
 	update_shortcut()
 	resource_saved.connect(_on_resource_saved)
 
@@ -94,6 +105,12 @@ func _exit_tree() -> void:
 	installer.queue_free()
 	installer = null
 
+	if is_instance_valid(menu):
+		menu.menu_item_selected.disconnect(_on_menu_item_selected)
+		menu.remove_formatter_menu()
+		menu.queue_free()
+		menu = null
+
 
 func shortcut_input(event: InputEvent) -> void:
 	if not has_command(get_editor_setting(SETTING_FORMATTER_PATH)):
@@ -102,11 +119,11 @@ func shortcut_input(event: InputEvent) -> void:
 	if not is_instance_valid(shortcut):
 		return
 	if shortcut.matches_event(event) and event.is_pressed() and not event.is_echo():
-		if format_script():
+		if format_current_script():
 			get_tree().root.set_input_as_handled()
 
 
-func format_script() -> bool:
+func format_current_script() -> bool:
 	if not EditorInterface.get_script_editor().is_visible_in_tree():
 		return false
 	var current_script := EditorInterface.get_script_editor().get_current_script()
@@ -150,7 +167,7 @@ func _on_resource_saved(saved_resource: Resource) -> void:
 	if not has_command(get_editor_setting(SETTING_FORMATTER_PATH)) or not is_instance_valid(script):
 		return
 
-	var formatted_code := format_code(script)
+	var formatted_code := format_code(script, false)
 	if formatted_code.is_empty():
 		return
 
@@ -188,7 +205,7 @@ func add_format_command() -> void:
 	EditorInterface.get_command_palette().add_command(
 		COMMAND_PALETTE_FORMAT_SCRIPT,
 		COMMAND_PALETTE_CATEGORY + COMMAND_PALETTE_FORMAT_SCRIPT,
-		format_script,
+		format_current_script,
 		shortcut.get_as_text() if is_instance_valid(shortcut) else "None",
 	)
 
@@ -251,19 +268,58 @@ func uninstall_formatter() -> void:
 	if FileAccess.file_exists(binary_path):
 		DirAccess.remove_absolute(binary_path)
 		print("GDScript formatter uninstalled successfully from: ", binary_path)
-		# Reset formatter path to default
 		set_editor_setting(SETTING_FORMATTER_PATH, DEFAULT_SETTINGS[SETTING_FORMATTER_PATH])
-		# Update commands to reflect the new state
+
 		remove_format_command()
 		add_format_command()
 		remove_uninstall_command()
 		add_uninstall_command()
+		if is_instance_valid(menu):
+			menu.update_menu(false)
 	else:
 		push_error("GDScript formatter not found in cache directory: ", binary_path)
 
 
+func reorder_code() -> bool:
+	if not EditorInterface.get_script_editor().is_visible_in_tree():
+		return false
+	var current_script := EditorInterface.get_script_editor().get_current_script()
+	if not is_instance_valid(current_script) or not current_script is GDScript:
+		return false
+	var code_edit: CodeEdit = EditorInterface.get_script_editor().get_current_editor().get_base_editor()
+
+	var formatted_code := format_code(current_script, true)
+	if formatted_code.is_empty():
+		return false
+
+	reload_code_edit(code_edit, formatted_code)
+	return true
+
+
 func report_issue() -> void:
 	OS.shell_open("https://github.com/GDQuest/GDScript-formatter/issues")
+
+
+func show_help() -> void:
+	OS.shell_open("https://www.gdquest.com/library/gdscript_formatter/")
+
+
+func _on_menu_item_selected(command: String) -> void:
+	match command:
+		"format_script":
+			format_current_script()
+		"reorder_code":
+			reorder_code()
+		"install_update":
+			installer.install_or_update_formatter()
+		"uninstall":
+			uninstall_formatter()
+		"report_issue":
+			report_issue()
+		"help":
+			show_help()
+		_:
+			push_warning("Unsupported command sent from the menu: " + command)
 
 
 func has_command(command: String) -> bool:
@@ -308,9 +364,9 @@ func has_editor_setting(setting_name: String) -> bool:
 	return editor_settings.has_setting(full_setting_key)
 
 
-## Formats a GDScript file using the GDScript Formatter in place,
-## and returns the formatted code as a string.
-func format_code(script: GDScript) -> String:
+## Formats a GDScript file using the GDScript Formatter,
+## and returns the formatted code as a string. Optionally reorders the code.
+func format_code(script: GDScript, force_reorder := false) -> String:
 	var script_path := script.resource_path
 	var output: Array = []
 	var formatter_arguments: Array = [ProjectSettings.globalize_path(script_path)]
@@ -319,15 +375,16 @@ func format_code(script: GDScript) -> String:
 		formatter_arguments.push_back("--use-spaces")
 		formatter_arguments.push_back("--indent-size=%d" % get_editor_setting(SETTING_INDENT_SIZE))
 
+	var should_reorder := force_reorder or get_editor_setting(SETTING_REORDER_CODE) as bool
 	# TODO: remove this safety check once we have safe mode support for reorder_code
-	if get_editor_setting(SETTING_REORDER_CODE) and get_editor_setting(SETTING_SAFE_MODE):
+	if should_reorder and get_editor_setting(SETTING_SAFE_MODE):
 		push_error("GDScript Formatter: Settings 'reorder_code' and 'safe_mode' settings are incompatible and cannot be used together.")
 		return ""
 
-	if get_editor_setting(SETTING_REORDER_CODE):
+	if should_reorder:
 		formatter_arguments.push_back("--reorder-code")
 
-	if get_editor_setting(SETTING_SAFE_MODE):
+	if not force_reorder and get_editor_setting(SETTING_SAFE_MODE):
 		formatter_arguments.push_back("--safe")
 
 	var exit_code := OS.execute(get_editor_setting(SETTING_FORMATTER_PATH), formatter_arguments, output)
