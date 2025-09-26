@@ -18,6 +18,8 @@ The goal of this project is to provide a simple and really fast GDScript code fo
 
 You can find binaries for Windows, macOS, and Linux in the [releases tab](https://github.com/GDQuest/godot-gdscript-formatter-tree-sitter/releases) of this repository. Download the binary for your platform, unzip it, rename it to the command name you want (e.g. `gdscript-format`) and place it somewhere in your system PATH.
 
+Alternatively for Arch Linux, there is the community maintained AUR Package [gdscript-formatter-bin](https://aur.archlinux.org/packages/gdscript-formatter-bin).
+
 To format a file, run:
 
 ```bash
