@@ -14,9 +14,14 @@ signal installation_failed(error_message: String)
 
 var http_request_state := HttpRequestState.IDLE
 var http_request: HTTPRequest = HTTPRequest.new()
+var formatter_cache_dir: String
 
 
-func _ready(plugin: EditorPlugin):
+func _init(cache_dir: String) -> void:
+	formatter_cache_dir = cache_dir
+
+
+func _ready() -> void:
 	add_child(http_request)
 	http_request.request_completed.connect(_on_request_completed)
 
@@ -168,7 +173,6 @@ func _find_matching_asset(assets: Array) -> String:
 
 
 func _download_and_install_binary(zip_data: PackedByteArray, platform_info: Dictionary) -> String:
-	var formatter_cache_dir := EditorInterface.get_editor_paths().get_cache_dir().path_join("gdquest")
 	var binary_name: String = platform_info["binary_name"]
 	# We get the contents of the zip file as a byte array. we need to write
 	# it to a file to be able to read it. We use a temporary file for that.

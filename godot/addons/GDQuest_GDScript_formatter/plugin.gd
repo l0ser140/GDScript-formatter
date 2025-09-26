@@ -22,6 +22,8 @@ const SETTING_FORMATTER_PATH = "formatter_path"
 const COMMAND_PALETTE_CATEGORY = "gdquest gdscript formatter/"
 const COMMAND_PALETTE_FORMAT_SCRIPT = "Format GDScript"
 const COMMAND_PALETTE_INSTALL_UPDATE = "Install or Update Formatter"
+const COMMAND_PALETTE_UNINSTALL = "Uninstall Formatter"
+const COMMAND_PALETTE_REPORT_ISSUE = "Report Issue"
 
 const DEFAULT_SETTINGS = {
 	SETTING_FORMAT_ON_SAVE: false,
@@ -34,6 +36,7 @@ const DEFAULT_SETTINGS = {
 
 var connection_list: Array[Resource] = []
 var installer: FormatterInstaller = null
+var formatter_cache_dir: String
 
 
 func _init() -> void:
@@ -57,12 +60,15 @@ func _init() -> void:
 
 
 func _enter_tree() -> void:
-	installer = FormatterInstaller.new()
+	formatter_cache_dir = EditorInterface.get_editor_paths().get_cache_dir().path_join("gdquest")
+	installer = FormatterInstaller.new(formatter_cache_dir)
 	add_child(installer)
 	installer.installation_completed.connect(
 		func _on_installation_completed(binary_path: String) -> void:
 			set_editor_setting(SETTING_FORMATTER_PATH, binary_path)
 			add_format_command()
+			remove_uninstall_command()
+			add_uninstall_command()
 	)
 	installer.installation_failed.connect(
 		func _on_installation_failed(error_message: String) -> void:
@@ -71,6 +77,8 @@ func _enter_tree() -> void:
 
 	add_format_command()
 	add_install_update_command()
+	add_uninstall_command()
+	add_report_issue_command()
 	update_shortcut()
 	resource_saved.connect(_on_resource_saved)
 
@@ -80,6 +88,8 @@ func _exit_tree() -> void:
 
 	remove_format_command()
 	remove_install_update_command()
+	remove_uninstall_command()
+	remove_report_issue_command()
 
 	installer.queue_free()
 	installer = null
@@ -199,6 +209,63 @@ func remove_install_update_command() -> void:
 	EditorInterface.get_command_palette().remove_command(COMMAND_PALETTE_CATEGORY + COMMAND_PALETTE_INSTALL_UPDATE)
 
 
+func add_uninstall_command() -> void:
+	if is_formatter_installed_locally():
+		EditorInterface.get_command_palette().add_command(
+			COMMAND_PALETTE_UNINSTALL,
+			COMMAND_PALETTE_CATEGORY + COMMAND_PALETTE_UNINSTALL,
+			uninstall_formatter,
+		)
+
+
+func remove_uninstall_command() -> void:
+	EditorInterface.get_command_palette().remove_command(COMMAND_PALETTE_CATEGORY + COMMAND_PALETTE_UNINSTALL)
+
+
+func add_report_issue_command() -> void:
+	EditorInterface.get_command_palette().add_command(
+		COMMAND_PALETTE_REPORT_ISSUE,
+		COMMAND_PALETTE_CATEGORY + COMMAND_PALETTE_REPORT_ISSUE,
+		report_issue,
+	)
+
+
+func remove_report_issue_command() -> void:
+	EditorInterface.get_command_palette().remove_command(COMMAND_PALETTE_CATEGORY + COMMAND_PALETTE_REPORT_ISSUE)
+
+
+func is_formatter_installed_locally() -> bool:
+	var binary_name := "gdscript-formatter"
+	if OS.get_name().to_lower().contains("windows"):
+		binary_name = "gdscript-formatter.exe"
+	var binary_path := formatter_cache_dir.path_join(binary_name)
+	return FileAccess.file_exists(binary_path)
+
+
+func uninstall_formatter() -> void:
+	var binary_name := "gdscript-formatter"
+	if OS.get_name().to_lower().contains("windows"):
+		binary_name = "gdscript-formatter.exe"
+	var binary_path := formatter_cache_dir.path_join(binary_name)
+
+	if FileAccess.file_exists(binary_path):
+		DirAccess.remove_absolute(binary_path)
+		print("GDScript formatter uninstalled successfully from: ", binary_path)
+		# Reset formatter path to default
+		set_editor_setting(SETTING_FORMATTER_PATH, DEFAULT_SETTINGS[SETTING_FORMATTER_PATH])
+		# Update commands to reflect the new state
+		remove_format_command()
+		add_format_command()
+		remove_uninstall_command()
+		add_uninstall_command()
+	else:
+		push_error("GDScript formatter not found in cache directory: ", binary_path)
+
+
+func report_issue() -> void:
+	OS.shell_open("https://github.com/GDQuest/GDScript-formatter/issues")
+
+
 func has_command(command: String) -> bool:
 	var output: Array = []
 	var exit_code := OS.execute(command, ["--version"], output)
@@ -285,9 +352,9 @@ class CodeEditState:
 	var caret_column: int
 	var horizontal_scroll: int
 	var vertical_scroll: int
-	var breakpoints: Dictionary[int, String] = {}
-	var bookmarks: Dictionary[int, String] = {}
-	var folds: Dictionary[int, String] = {}
+	var breakpoints: Dictionary[int, String] = { }
+	var bookmarks: Dictionary[int, String] = { }
+	var folds: Dictionary[int, String] = { }
 	var code_edit: CodeEdit
 
 
