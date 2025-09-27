@@ -1,4 +1,6 @@
-class_name Test extends Node
+class_name Test
+extends Node
+
 
 func a():
 	pass

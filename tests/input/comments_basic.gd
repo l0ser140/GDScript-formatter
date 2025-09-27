@@ -1,6 +1,8 @@
 # first line comment
 @tool
-class_name Aaa extends Node
+class_name Aaa
+extends Node
+
 # after extends comment
 
 # before statement comment
