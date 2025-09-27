@@ -12,7 +12,7 @@
 //!
 //! Some of the post-processing is outside of Topiary's capabilities, while other
 //! rules have too much performance overhead when applied through Topiary.
-use std::io::BufWriter;
+use std::{collections::VecDeque, io::BufWriter};
 
 use regex::{Regex, RegexBuilder};
 use topiary_core::{Language, Operation, TopiaryQuery, formatter_tree};
@@ -40,7 +40,7 @@ struct Formatter {
     content: String,
     config: FormatterConfig,
     parser: Parser,
-    input_tree: Tree,
+    input_tree: GdTree,
     tree: Tree,
 }
 
@@ -51,12 +51,13 @@ impl Formatter {
         parser
             .set_language(&tree_sitter_gdscript::LANGUAGE.into())
             .unwrap();
-        let input_tree = parser.parse(&content, None).unwrap();
+        let tree = parser.parse(&content, None).unwrap();
+        let input_tree = GdTree::from_ts_tree(&tree);
 
         Self {
             content,
             config,
-            tree: input_tree.clone(),
+            tree,
             input_tree,
             parser,
         }
@@ -142,10 +143,11 @@ impl Formatter {
     #[inline(always)]
     fn finish(mut self) -> Result<String, Box<dyn std::error::Error>> {
         if self.config.safe {
-            self.tree = self.parser.parse(&self.content, Some(&self.tree)).unwrap();
+            self.tree = self.parser.parse(&self.content, None).unwrap();
 
-            if !compare_trees(self.input_tree, self.tree) {
-                return Err("Trees are different".into());
+            let output_tree = GdTree::from_ts_tree(&self.tree);
+            if self.input_tree != output_tree {
+                return Err("Code structure has changed after formatting".into());
             }
         }
 
@@ -397,6 +399,100 @@ impl Formatter {
     }
 }
 
+/// A syntax tree of the source code.
+struct GdTree {
+    nodes: Vec<GdTreeNode>,
+}
+
+impl GdTree {
+    /// Constructs a new `GdTree` from `TSTree`.
+    fn from_ts_tree(tree: &Tree) -> Self {
+        let mut cursor = tree.walk();
+        let mut nodes = Vec::new();
+
+        let ts_root = cursor.node();
+        let root = GdTreeNode {
+            grammar_id: ts_root.grammar_id(),
+            children: Vec::new(),
+        };
+        nodes.push(root);
+
+        let mut queue = VecDeque::new();
+        queue.push_back((ts_root, 0));
+
+        while let Some((parent_ts_node, parent_node_id)) = queue.pop_front() {
+            let ts_children = parent_ts_node.children(&mut cursor);
+            for ts_child in ts_children {
+                // Skip anonymous nodes
+                if !ts_child.is_named() {
+                    continue;
+                }
+
+                let child_id = nodes.len();
+                let child = GdTreeNode {
+                    grammar_id: ts_child.grammar_id(),
+                    children: Vec::new(),
+                };
+                nodes.push(child);
+
+                let parent_node = &mut nodes[parent_node_id];
+                parent_node.children.push(child_id);
+
+                queue.push_back((ts_child, child_id));
+            }
+        }
+
+        GdTree { nodes }
+    }
+}
+
+impl PartialEq for GdTree {
+    fn eq(&self, other: &Self) -> bool {
+        let mut left_stack = Vec::new();
+        let mut right_stack = Vec::new();
+
+        // Starting from root (0)
+        left_stack.push(0);
+        right_stack.push(0);
+
+        while let (Some(left_current_node_id), Some(right_current_node_id)) =
+            (left_stack.pop(), right_stack.pop())
+        {
+            let left_current_node = &self.nodes[left_current_node_id];
+            let right_current_node = &other.nodes[right_current_node_id];
+            if left_current_node.children.len() != right_current_node.children.len() {
+                // A different number of children means the syntax trees are different, so the code
+                // structure has changed.
+                // NOTE: There's a valid case of change: an annotation above a variable may be wrapped
+                // on the same line as the variable, which turns the annotation into a child of the variable.
+                // We could ignore this specific case, but for now, we consider any change in structure
+                // as a potential issue.
+                return false;
+            }
+
+            for (left_node_id, right_node_id) in left_current_node
+                .children
+                .iter()
+                .zip(right_current_node.children.iter())
+            {
+                let left_node = &self.nodes[*left_node_id];
+                let right_node = &other.nodes[*right_node_id];
+                if left_node.grammar_id != right_node.grammar_id {
+                    return false;
+                }
+                left_stack.push(*left_node_id);
+                right_stack.push(*right_node_id);
+            }
+        }
+        true
+    }
+}
+
+struct GdTreeNode {
+    grammar_id: u16,
+    children: Vec<usize>,
+}
+
 /// Calculates end position of the `slice` counting from `start`
 fn calculate_end_position(mut start: Point, slice: &str) -> Point {
     for b in slice.as_bytes() {
@@ -408,40 +504,4 @@ fn calculate_end_position(mut start: Point, slice: &str) -> Point {
         }
     }
     start
-}
-
-/// Returns true if both trees have the same structure.
-fn compare_trees(left_tree: Tree, right_tree: Tree) -> bool {
-    let mut left_cursor = left_tree.walk();
-    let mut right_cursor = right_tree.walk();
-
-    let mut left_stack = Vec::new();
-    let mut right_stack = Vec::new();
-    left_stack.push(left_cursor.node());
-    right_stack.push(right_cursor.node());
-
-    while let (Some(left_current_node), Some(right_current_node)) =
-        (left_stack.pop(), right_stack.pop())
-    {
-        if left_current_node.child_count() != right_current_node.child_count() {
-            // A different number of children means the syntax trees are different, so the code
-            // structure has changed.
-            // NOTE: There's a valid case of change: an annotation above a variable may be wrapped
-            // on the same line as the variable, which turns the annotation into a child of the variable.
-            // We could ignore this specific case, but for now, we consider any change in structure
-            // as a potential issue.
-            return false;
-        }
-
-        let left_children = left_current_node.children(&mut left_cursor);
-        let right_children = left_current_node.children(&mut right_cursor);
-        for (left_node, right_node) in left_children.zip(right_children) {
-            if left_node.grammar_id() != right_node.grammar_id() {
-                return false;
-            }
-            left_stack.push(left_node);
-            right_stack.push(right_node);
-        }
-    }
-    true
 }
