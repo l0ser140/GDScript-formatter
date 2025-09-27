@@ -1,7 +1,8 @@
 @tool
 @icon("res://icon.svg")
-class_name TestClass extends Node
-## This is a documentation comment for the test class
+class_name TestClass
+extends Node
+## This is the class docstring
 
 signal test_signal(value: int)
 
@@ -55,17 +56,14 @@ func _exit_tree():
 	pass
 
 
-func public_method() -> int:
-	return TEST_CONSTANT
-
-
-func _private_method() -> String:
-	return _PRIVATE_CONSTANT
-
-
 func get_public_property() -> float:
 	return regular_variable
 
+
+@rpc("authority", "call_remote", "reliable")
+func public_method() -> int:
+	return TEST_CONSTANT
+	
 
 func set_public_property(value: float):
 	regular_variable = value
@@ -73,6 +71,10 @@ func set_public_property(value: float):
 
 func _get_private_property() -> bool:
 	return _private_regular
+
+
+func _private_method() -> String:
+	return _PRIVATE_CONSTANT
 
 
 func _set_private_property(value: bool):

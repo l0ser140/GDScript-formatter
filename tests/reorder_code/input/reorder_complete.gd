@@ -1,8 +1,10 @@
 @tool
 @icon("res://icon.svg")
-class_name TestClass extends Node
+class_name TestClass
+extends Node
+## This is the class docstring
 
-## This is a docstring for the test class
+
 func _enter_tree():
 	pass
 
@@ -23,6 +25,7 @@ func _exit_tree():
 	pass
 
 
+@rpc("authority", "call_remote", "reliable")
 func public_method() -> int:
 	return TEST_CONSTANT
 
@@ -57,7 +60,6 @@ class InnerClass:
 
 class _PrivateInnerClass:
 	var _inner_private: String = "inner"
-
 
 signal test_signal(value: int)
 
