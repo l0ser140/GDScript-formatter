@@ -1,3 +1,4 @@
-class_name MyNode extends "res:/path.gd"
+class_name MyNode
+extends "res:/path.gd"
 
 var a = 10

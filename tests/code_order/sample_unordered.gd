@@ -3,7 +3,6 @@
 class_name TestClass extends Node
 
 ## This is a docstring for the test class
-
 func _enter_tree():
 	pass
 
@@ -58,6 +57,7 @@ class InnerClass:
 
 class _PrivateInnerClass:
 	var _inner_private: String = "inner"
+
 
 signal test_signal(value: int)
 
