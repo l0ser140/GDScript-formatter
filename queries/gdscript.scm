@@ -212,7 +212,9 @@
 
 ; This is for ternary expressions, e.g. `a if b else c`
 (conditional_expression [("if") ("else")] @prepend_space @append_space)
+(parenthesized_expression (conditional_expression ("if") @prepend_input_softline))
 (parenthesized_expression (conditional_expression ("else") @prepend_input_softline))
+(conditional_expression (conditional_expression ("if") @prepend_input_softline))
 (conditional_expression (conditional_expression ("else") @prepend_input_softline))
 
 (parenthesized_expression "(" @append_antispace)

@@ -8,6 +8,18 @@ func foo():
 			else "northwest"
 	)
 
+	var quadrant_newlines = (
+		"northeast"
+		if angle_degrees <= 90     
+		else "southeast"
+
+		if angle_degrees <= 180
+		else "southwest"
+
+		if angle_degrees <= 270    
+		else "northwest"
+	)
+
 	var position = Vector2(250, 350)
 	if (
 			position.x > 200 and position.x < 400
