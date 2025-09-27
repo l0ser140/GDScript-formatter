@@ -18,3 +18,11 @@ func foo():
 		# Conditional expression should be supported
 		0 if true else 2:
 			pass
+
+	match type:
+		Type.LEFT:
+			animation.play("left")
+		Type.RIGHT:
+			animation.play("right")
+		_:
+			animation.play("right")

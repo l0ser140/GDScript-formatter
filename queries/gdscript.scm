@@ -204,7 +204,7 @@
 
 (match_statement ":" @prepend_antispace)
 (match_body) @prepend_indent_start @append_indent_end @prepend_hardline
-(pattern_section ":" @prepend_antispace)
+(pattern_section ":" @prepend_antispace) @append_hardline
 (pattern_section (body) @prepend_hardline)
 (pattern_section "," @prepend_antispace @append_space)
 (pattern_guard) @prepend_space
