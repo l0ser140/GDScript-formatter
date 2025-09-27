@@ -82,12 +82,15 @@
 ; CLASS DEFINITIONS
 (class_definition (class_body) @prepend_hardline @append_hardline)
 (class_definition (class_body (extends_statement) @append_hardline ))
-(class_name_statement) @append_space
 (class_definition) @prepend_hardline
+(class_definition extends: (extends_statement "extends" @prepend_space))
 (source
-    (extends_statement) @append_delimiter @append_hardline
+    (extends_statement "extends" @append_space) @append_delimiter @append_hardline
     (#delimiter! "\n"))
-(extends_statement) @prepend_space
+(source
+    (class_name_statement
+        extends: (extends_statement) @prepend_space)
+    @append_delimiter @append_hardline (#delimiter! "\n"))
 
 ; CONST DEFINITIONS
 (const_statement ":" @append_space)
