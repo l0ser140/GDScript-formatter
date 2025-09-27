@@ -324,7 +324,7 @@ dependencies = [
 
 [[package]]
 name = "gdscript-formatter"
-version = "0.9.1"
+version = "0.10.0"
 dependencies = [
  "clap",
  "rayon",

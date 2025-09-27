@@ -2,6 +2,29 @@
 
 This file documents the changes made to the formatter with each release. This project uses [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
+## Release 0.10.0 (2025-10-05)
+
+This release introduces a Godot addon to integrate the formatter with the Godot editor and fixes several formatting edge cases.
+
+### Added
+
+- Godot addon in which you can:
+  - Install and uninstall the formatter directly from within the Godot editor
+  - Access issues and documentation
+  - Use the formatter, reorder code, and format on save
+  - Change formatter settings
+- Reference to the AUR package in the README
+
+### Changed
+
+- Changed formatting for `class_name` declarations with `extends` to wrap on two lines (following the official style guide)
+
+### Fixed
+
+- Newlines being incorrectly removed in multiline ternary expressions
+- Formatting issues with `extends` when the class name is under 3 characters long
+- Missing line returns between multiple match patterns on a single line
+
 ## Release 0.9.1 (2025-09-25)
 
 This is a minor release that adds Nix support and fixes several edge cases with output formatting and comma handling. It also prepares for support for the formatter from within Godot.
