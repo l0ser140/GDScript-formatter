@@ -199,23 +199,10 @@ fn extract_tokens_to_reorder(
     let root = tree.root_node();
     let mut elements = Vec::new();
 
-    // Query for all top-level elements (direct children of source)
+    // This query covers all top-level elements (direct children of source)
+    // We need to capture everything so nothing gets lost
     let query_str = r#"
-    (source
-        [
-            (annotation) @annotation
-            (class_name_statement) @class_name
-            (extends_statement) @extends
-            (comment) @comment
-            (signal_statement) @signal
-            (enum_definition) @enum
-            (const_statement) @const
-            (variable_statement) @variable
-            (function_definition) @function
-            (constructor_definition) @constructor
-            (class_definition) @class
-        ]
-    )
+        (source (_) @element)
     "#;
 
     let query = Query::new(&tree_sitter_gdscript::LANGUAGE.into(), query_str)?;
@@ -229,34 +216,113 @@ fn extract_tokens_to_reorder(
         for capture in m.captures {
             let node = capture.node;
             let text = node.utf8_text(content.as_bytes())?;
-            all_nodes.push((node, text.to_string(), capture.index));
+            all_nodes.push((node, text.to_string()));
         }
     }
 
     // Sort by position and deduplicate by byte position to avoid processing same node multiple times
-    all_nodes.sort_by_key(|(node, _, _)| node.start_byte());
-    all_nodes.dedup_by_key(|(node, _, _)| (node.start_byte(), node.end_byte()));
+    all_nodes.dedup_by_key(|(node, _)| (node.start_byte(), node.end_byte()));
 
-    // Associate comments with the next declaration
-    // TODO: handle the class case. In the official style guide they put the
-    // class docstring after the class declaration (why not the same as every
-    // other declaration?). This code will fail if the class docstring is after
-    // the class for the top level class name declaration right now.
+    // Here we associate comments and annotations with the next declaration. We
+    // loop through the node tree from top to bottom, collecting comments and
+    // annotations until we hit a declaration, at which point we attach the
+    // collected comments/annotations to that declaration.
     let mut pending_comments = Vec::new();
-    for (node, text, _capture_index) in all_nodes {
-        if node.kind() == "comment" {
-            pending_comments.push(text);
-        } else {
-            let element = classify_element(node, &text, content)?;
-            if let Some(element) = element {
-                elements.push(GDScriptTokensWithComments {
-                    token_kind: element,
-                    attached_comments: pending_comments.clone(),
-                    original_text: text,
-                    start_byte: node.start_byte(),
-                    end_byte: node.end_byte(),
-                });
-                pending_comments.clear();
+    let mut pending_annotations = Vec::new();
+    // In the official style guide, the class docstring is after the class. So
+    // we need to find documentation comments either above the class definition
+    // or below it to attach to the class itself.
+    let mut class_docstring_comments = Vec::new();
+    let mut found_class_declaration = false;
+    let mut found_extends_declaration = false;
+
+    for (node, text) in all_nodes {
+        match node.kind() {
+            "comment" => {
+                // Check if this is a class docstring (which can appear at top of script OR after the class_name/extends declarations)
+                // We assume the class_name and extends are at the top of the script if they exist
+                if text.trim_start().starts_with("##") {
+                    if !found_class_declaration && !found_extends_declaration {
+                        // This is at the top of the script before any declarations
+                        class_docstring_comments.push(text);
+                    } else if (found_class_declaration || found_extends_declaration)
+                        && class_docstring_comments.is_empty()
+                    {
+                        // TODO: We will probably have to refine this because
+                        // there might be docstrings after the class that are
+                        // actually meant for the constant or the element that
+                        // comes right after the class name/extends.
+                        class_docstring_comments.push(text);
+                    } else {
+                        pending_comments.push(text);
+                    }
+                } else {
+                    pending_comments.push(text);
+                }
+            }
+            "region_start" => {
+                pending_comments.push(text);
+            }
+            "region_end" => {
+                pending_comments.push(text);
+            }
+            "annotation" => {
+                pending_annotations.push(text);
+            }
+            "class_name_statement" => {
+                found_class_declaration = true;
+                let element = classify_element(node, &text, content)?;
+                if let Some(element) = element {
+                    println!("DEBUG: Adding class_name token with text: '{}'", text);
+                    elements.push(GDScriptTokensWithComments {
+                        token_kind: element,
+                        attached_comments: pending_comments.clone(),
+                        original_text: text,
+                        start_byte: node.start_byte(),
+                        end_byte: node.end_byte(),
+                    });
+                    pending_comments.clear();
+                    pending_annotations.clear();
+                }
+            }
+            "extends_statement" => {
+                found_extends_declaration = true;
+                let element = classify_element(node, &text, content)?;
+                if let Some(element) = element {
+                    // Attach any accumulated class docstring to extends
+                    let mut combined_comments = pending_comments.clone();
+                    combined_comments.extend(class_docstring_comments.clone());
+
+                    println!("DEBUG: Adding extends token with text: '{}'", text);
+                    elements.push(GDScriptTokensWithComments {
+                        token_kind: element,
+                        attached_comments: combined_comments,
+                        original_text: text,
+                        start_byte: node.start_byte(),
+                        end_byte: node.end_byte(),
+                    });
+                    pending_comments.clear();
+                    class_docstring_comments.clear();
+                    pending_annotations.clear();
+                }
+            }
+            _ => {
+                let element = classify_element(node, &text, content)?;
+                if let Some(element) = element {
+                    // Combine annotations and comments for this element
+                    let mut combined_comments = pending_annotations.clone();
+                    combined_comments.extend(pending_comments.clone());
+
+                    elements.push(GDScriptTokensWithComments {
+                        token_kind: element,
+                        attached_comments: combined_comments,
+                        original_text: text,
+                        start_byte: node.start_byte(),
+                        end_byte: node.end_byte(),
+                    });
+                    pending_comments.clear();
+                    pending_annotations.clear();
+                }
             }
         }
     }
@@ -281,9 +347,27 @@ fn classify_element(
                 Ok(None)
             }
         }
-        "class_name_statement" => Ok(Some(GDScriptTokenKind::ClassName(text.to_string()))),
+        "class_name_statement" => {
+            // If the class_name statement also has an extends in it, we split
+            // it into two separate elements on two lines.
+            if text.contains("extends") {
+                let parts: Vec<&str> = text.splitn(2, "extends").collect();
+                if parts.len() == 2 {
+                    // We'll handle this case in the extraction logic
+                    Ok(Some(GDScriptTokenKind::ClassName(
+                        parts[0].trim().to_string(),
+                    )))
+                } else {
+                    Ok(Some(GDScriptTokenKind::ClassName(text.to_string())))
+                }
+            } else {
+                Ok(Some(GDScriptTokenKind::ClassName(text.to_string())))
+            }
+        }
         "extends_statement" => Ok(Some(GDScriptTokenKind::Extends(text.to_string()))),
         "comment" => Ok(None),
+        "region_start" => Ok(None),
+        "region_end" => Ok(None),
         "signal_statement" => {
             let name = extract_signal_name(node, content)?;
             let is_private = name.starts_with('_');

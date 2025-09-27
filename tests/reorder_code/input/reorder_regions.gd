@@ -8,11 +8,5 @@ func bar():
 #endregion
 func a():
 	pass
-#region utilities
 func helper():
 	pass
-
-
-func another_helper():
-	pass
-#endregion

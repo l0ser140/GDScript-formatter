@@ -63,7 +63,7 @@ func get_public_property() -> float:
 @rpc("authority", "call_remote", "reliable")
 func public_method() -> int:
 	return TEST_CONSTANT
-	
+
 
 func set_public_property(value: float):
 	regular_variable = value
