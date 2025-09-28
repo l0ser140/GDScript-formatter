@@ -2,7 +2,22 @@
 
 This file documents the changes made to the formatter with each release. This project uses [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
-## Release 0.10.0 (2025-10-05)
+## Release 0.10.1 (2025-09-28)
+
+### Changed
+
+- Restored and added code reordering test cases
+
+### Fixed
+
+- Edge cases with class name and extend wrapping not being enforced on two lines
+- Reorder mode dropping region comments and RPC annotations
+- Some multiline strings being parsed incorrectly
+- Class docstring first line being moved incorrectly during reordering
+- Typed dictionaries function return types not formatting correctly
+- Region comments not attaching to the correct code block after reordering
+
+## Release 0.10.0 (2025-09-27)
 
 This release introduces a Godot addon to integrate the formatter with the Godot editor and fixes several formatting edge cases.
 
