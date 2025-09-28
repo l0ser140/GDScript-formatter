@@ -133,26 +133,17 @@ func _get_platform_info() -> Dictionary:
 	if os_name.contains("windows"):
 		binary_name = "gdscript-formatter.exe"
 
-	var platform_info := { }
+	var platform_info := {
+		"architecture": architecture,
+		"binary_name": binary_name,
+	}
 
 	if os_name.contains("windows"):
-		platform_info = {
-			"os": "windows",
-			"architecture": architecture,
-			"binary_name": binary_name,
-		}
+		platform_info["os"] = "windows"
 	elif os_name.contains("linux"):
-		platform_info = {
-			"os": "linux",
-			"architecture": architecture,
-			"binary_name": binary_name,
-		}
+		platform_info["os"] = "linux"
 	elif os_name.contains("macos") or os_name.contains("osx"):
-		platform_info = {
-			"os": "macos",
-			"architecture": architecture,
-			"binary_name": binary_name,
-		}
+		platform_info["os"] = "macos"
 
 	return platform_info
 
@@ -162,7 +153,10 @@ func _find_matching_asset(assets: Array) -> String:
 	if platform_info.is_empty():
 		return ""
 
-	var expected_pattern := "gdscript-formatter-%s-%s.zip" % [platform_info["os"], platform_info["architecture"]]
+	var expected_pattern := "gdscript-formatter-%s-%s" % [platform_info["os"], platform_info["architecture"]]
+	if platform_info["os"] == "windows":
+		expected_pattern += ".exe"
+	expected_pattern += ".zip"
 
 	for asset in assets:
 		var asset_name: String = asset["name"]
