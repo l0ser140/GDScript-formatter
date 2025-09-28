@@ -330,28 +330,43 @@ impl Formatter {
                 let mut matches = cursor.matches(&query, root, self.content.as_bytes());
                 while let Some(m) = matches.next() {
                     let first_node = m.captures[0].node;
-                    if m.captures.len() == 3 {
-                        let comment_node = m.captures[1].node;
-                        let second_node = m.captures[2].node;
-                        // If the @comment is on the same line as the first node,
-                        // we'll add a blank line before the @second node
-                        if comment_node.start_position().row == first_node.start_position().row {
-                            // Find where to insert the new line (before any indentation)
-                            let mut byte_idx = second_node.start_byte();
-                            let mut position = second_node.start_position();
-                            position.column = 0;
-                            while self.content.as_bytes()[byte_idx] != b'\n' {
-                                byte_idx -= 1;
+                    let last_node = m.captures.last().unwrap().node;
+
+                    let mut insert_before = last_node;
+
+                    let capture_has_comments = m.captures.len() >= 3;
+
+                    if capture_has_comments {
+                        let last_comment_node = m.captures[m.captures.len() - 2].node;
+
+                        let last_comment_is_inline_comment = last_comment_node.start_position().row
+                            == first_node.start_position().row;
+                        let last_comment_is_doc_comment = !last_comment_is_inline_comment
+                            && last_comment_node.start_position().row
+                                == last_node.start_position().row - 1;
+
+                        // if last comment node is a doc comment find first doc comment node and insert new lines before that
+                        if last_comment_is_doc_comment {
+                            let mut comment_node_index = m.captures.len() - 2;
+
+                            // find first documentation comment node
+                            while comment_node_index > 2
+                                && m.captures[comment_node_index - 1].node.start_position().row
+                                    == m.captures[comment_node_index].node.start_position().row - 1
+                            {
+                                comment_node_index -= 1;
                             }
-                            new_lines_at.push((byte_idx, position));
-                        } else {
-                            // Otherwise, add a blank line after the first node
-                            new_lines_at.push((first_node.end_byte(), first_node.end_position()));
+                            insert_before = m.captures[comment_node_index].node;
                         }
-                    } else {
-                        // If there's no comment between the nodes, add a blank line after the first node
-                        new_lines_at.push((first_node.end_byte(), first_node.end_position()));
                     }
+
+                    let mut byte_idx = insert_before.start_byte();
+                    let mut position = insert_before.start_position();
+                    position.column = 0;
+                    while byte_idx > 0 && self.content.as_bytes()[byte_idx] != b'\n' {
+                        byte_idx -= 1;
+                    }
+                    new_lines_at.push((byte_idx, position));
                 }
             };
 
@@ -372,7 +387,9 @@ impl Formatter {
             let mut new_end_position = position;
             let mut new_end_byte_idx = byte_idx;
             // Only add a second blank line if there isn't already one
-            if self.content.as_bytes()[byte_idx + 1] != b'\n' {
+            if !(self.content.as_bytes()[byte_idx] == b'\n'
+                && self.content.as_bytes()[byte_idx - 1] == b'\n')
+            {
                 new_end_position.row += 1;
                 new_end_byte_idx += 1;
                 self.content.insert(byte_idx, '\n');
