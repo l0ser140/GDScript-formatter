@@ -90,10 +90,7 @@
         extends: (extends_statement) @prepend_hardline @append_delimiter (#delimiter! "\n")) @append_hardline)
 (source
     (extends_statement) @append_hardline @append_delimiter (#delimiter! "\n"))
-(source
-    (class_name_statement) @append_hardline
-    .
-    (extends_statement))
+(source (class_name_statement (name) @append_hardline))
 
 ; CONST DEFINITIONS
 (const_statement ":" @append_space)
