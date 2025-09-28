@@ -29,6 +29,7 @@ pub fn reorder_gdscript_elements(
 pub struct GDScriptTokensWithComments {
     pub token_kind: GDScriptTokenKind,
     pub attached_comments: Vec<String>,
+    pub trailing_comments: Vec<String>,
     pub original_text: String,
     pub start_byte: usize,
     pub end_byte: usize,
@@ -65,6 +66,26 @@ pub enum MethodType {
     BuiltinVirtual(u8),
     // This is for all other methods defined by the user
     Custom,
+}
+
+/// This represents a parsed tree-sitter node that we've classified to see if it's something we can reorder.
+///
+/// When we go through the GDScript file, we look at each piece of code (like functions, variables, comments)
+/// and figure out what it is. This struct holds that information plus the original node and text.
+///
+/// The `reorderable_element` field tells us if this piece of code is something we know how to reorder
+/// (like a function or variable) or if it's something we should just leave alone (like a random comment).
+#[derive(Debug, Clone)]
+struct ClassifiedElement<'a> {
+    /// Reference to the original tree-sitter node from parsing the file
+    node: tree_sitter::Node<'a>,
+    /// The text content of this piece of code
+    text: String,
+    /// If we can reorder this element, this contains tells us the node kind
+    /// (method, member variable, etc.). If we don't know what it is (e.g. new
+    /// syntax we don't support yet in new Godot version) or can't reorder it,
+    /// this is None.
+    reorderable_element: Option<GDScriptTokenKind>,
 }
 
 /// This constant lists built-in virtual methods in the order they should appear.
@@ -220,42 +241,71 @@ fn extract_tokens_to_reorder(
         }
     }
 
-    // Sort by position and deduplicate by byte position to avoid processing same node multiple times
-    all_nodes.dedup_by_key(|(node, _)| (node.start_byte(), node.end_byte()));
+    // First we process the top of the node tree. We look for the class docstring.
+    // For now we treat them as any ## comments that appear before any declaration
+    // like a variable or function. We collect them and then attach them to the
+    // extends statement if we find one.
+    //
+    // TODO: Nathan (GDQuest): this is not perfect, we need to handle more edge cases, but I'm
+    // pushing this for now to make the command more usable. We can improve this later.
+    // Notably a comment after the extends declaration might be a var or method docstring.
+    // We need to check if the comments are contiguous with the declaration they are
+    // attached to.
+    let mut class_docstring_comments = Vec::new();
+    let mut found_non_comment_non_class = false;
+    for (node, text) in &all_nodes {
+        match node.kind() {
+            "comment" => {
+                if text.trim_start().starts_with("##") && !found_non_comment_non_class {
+                    class_docstring_comments.push(text.clone());
+                }
+            }
+            "class_name_statement" | "extends_statement" | "annotation" => {
+                continue;
+            }
+            // Any other element means we're past the top of the file, so we stop
+            // collecting the class docstring
+            _ => {
+                found_non_comment_non_class = true;
+            }
+        }
+    }
 
+    let mut classified_elements = Vec::new();
     // Here we associate comments and annotations with the next declaration. We
     // loop through the node tree from top to bottom, collecting comments and
     // annotations until we hit a declaration, at which point we attach the
     // collected comments/annotations to that declaration.
+    for (node, text) in &all_nodes {
+        let reorderable_element = classify_element(*node, &text, content)?;
+        classified_elements.push(ClassifiedElement {
+            node: *node,
+            text: text.clone(),
+            reorderable_element,
+        });
+    }
     let mut pending_comments = Vec::new();
     let mut pending_annotations = Vec::new();
-    // In the official style guide, the class docstring is after the class. So
-    // we need to find documentation comments either above the class definition
-    // or below it to attach to the class itself.
-    let mut class_docstring_comments = Vec::new();
-    let mut found_class_declaration = false;
     let mut found_extends_declaration = false;
+    let mut class_docstring_attached = false;
+    // TODO: Handle multiple #region/#endregion pairs properly
+    // Nathan: For now we just attach the last #endregion to the most recent function
+    // that has a #region comment, to handle the most common use case
+    // Regions generally are tricky to reorder as they can span multiple
+    // functions that should be reordered. In those cases I would recommend users not to
+    // use regions though, or not to use the reorder feature
+    let mut region_end_comment = None;
 
-    for (node, text) in all_nodes {
+    for classified in classified_elements {
+        let node = classified.node;
+        let text = classified.text;
+        let reorderable_element = classified.reorderable_element;
         match node.kind() {
             "comment" => {
-                // Check if this is a class docstring (which can appear at top of script OR after the class_name/extends declarations)
-                // We assume the class_name and extends are at the top of the script if they exist
-                if text.trim_start().starts_with("##") {
-                    if !found_class_declaration && !found_extends_declaration {
-                        // This is at the top of the script before any declarations
-                        class_docstring_comments.push(text);
-                    } else if (found_class_declaration || found_extends_declaration)
-                        && class_docstring_comments.is_empty()
-                    {
-                        // TODO: We will probably have to refine this because
-                        // there might be docstrings after the class that are
-                        // actually meant for the constant or the element that
-                        // comes right after the class name/extends.
-                        class_docstring_comments.push(text);
-                    } else {
-                        pending_comments.push(text);
-                    }
+                // We already processed class docstring comments, so we skip them here
+                // This may look inefficient but in practice it should not have much impact
+                if text.trim_start().starts_with("##") && class_docstring_comments.contains(&text) {
+                    continue;
                 } else {
                     pending_comments.push(text);
                 }
@@ -264,19 +314,42 @@ fn extract_tokens_to_reorder(
                 pending_comments.push(text);
             }
             "region_end" => {
-                pending_comments.push(text);
+                region_end_comment = Some(text.clone());
             }
             "annotation" => {
-                pending_annotations.push(text);
+                if let Some(element) = reorderable_element {
+                    match element {
+                        GDScriptTokenKind::ClassAnnotation(_) => {
+                            elements.push(GDScriptTokensWithComments {
+                                token_kind: element,
+                                attached_comments: Vec::new(),
+                                trailing_comments: Vec::new(),
+                                original_text: text,
+                                start_byte: node.start_byte(),
+                                end_byte: node.end_byte(),
+                            });
+                        }
+                        _ => {
+                            pending_annotations.push(text);
+                        }
+                    }
+                } else {
+                    pending_annotations.push(text);
+                }
             }
             "class_name_statement" => {
-                found_class_declaration = true;
-                let element = classify_element(node, &text, content)?;
-                if let Some(element) = element {
-                    println!("DEBUG: Adding class_name token with text: '{}'", text);
+                if let Some(element) = reorderable_element {
+                    // Don't attach class docstring to class_name, save it for extends
+                    let mut non_docstring_comments = Vec::new();
+                    for comment in &pending_comments {
+                        if !class_docstring_comments.contains(comment) {
+                            non_docstring_comments.push(comment.clone());
+                        }
+                    }
                     elements.push(GDScriptTokensWithComments {
                         token_kind: element,
-                        attached_comments: pending_comments.clone(),
+                        attached_comments: non_docstring_comments,
+                        trailing_comments: Vec::new(),
                         original_text: text,
                         start_byte: node.start_byte(),
                         end_byte: node.end_byte(),
@@ -287,35 +360,94 @@ fn extract_tokens_to_reorder(
             }
             "extends_statement" => {
                 found_extends_declaration = true;
-                let element = classify_element(node, &text, content)?;
-                if let Some(element) = element {
-                    // Attach any accumulated class docstring to extends
-                    let mut combined_comments = pending_comments.clone();
-                    combined_comments.extend(class_docstring_comments.clone());
-
-                    println!("DEBUG: Adding extends token with text: '{}'", text);
+                if let Some(element) = reorderable_element {
                     elements.push(GDScriptTokensWithComments {
                         token_kind: element,
-                        attached_comments: combined_comments,
+                        attached_comments: pending_comments.clone(),
+                        trailing_comments: Vec::new(),
                         original_text: text,
                         start_byte: node.start_byte(),
                         end_byte: node.end_byte(),
                     });
                     pending_comments.clear();
-                    class_docstring_comments.clear();
                     pending_annotations.clear();
+
+                    // Create separate docstring element if we have class docstrings
+                    if !class_docstring_attached && !class_docstring_comments.is_empty() {
+                        let docstring_text = class_docstring_comments.join("\n");
+                        elements.push(GDScriptTokensWithComments {
+                            token_kind: GDScriptTokenKind::Docstring(docstring_text.clone()),
+                            attached_comments: Vec::new(),
+                            trailing_comments: Vec::new(),
+                            original_text: docstring_text,
+                            start_byte: 0,
+                            end_byte: 0,
+                        });
+                        class_docstring_attached = true;
+                    }
                 }
             }
             _ => {
-                let element = classify_element(node, &text, content)?;
-                if let Some(element) = element {
-                    // Combine annotations and comments for this element
+                if let Some(element) = reorderable_element {
+                    // If we haven't attached class docstring yet and this is the first real element,
+                    // create a separate docstring element (for cases where there's no extends)
+                    if !class_docstring_attached
+                        && !class_docstring_comments.is_empty()
+                        && !found_extends_declaration
+                    {
+                        let docstring_text = class_docstring_comments.join("\n");
+                        elements.push(GDScriptTokensWithComments {
+                            token_kind: GDScriptTokenKind::Docstring(docstring_text.clone()),
+                            attached_comments: Vec::new(),
+                            trailing_comments: Vec::new(),
+                            original_text: docstring_text,
+                            start_byte: 0,
+                            end_byte: 0,
+                        });
+                        class_docstring_attached = true;
+                    }
+
                     let mut combined_comments = pending_annotations.clone();
                     combined_comments.extend(pending_comments.clone());
+
+                    // We store trailing #endregion comments to attach them to
+                    // the most recent function that has a #region comment at
+                    // the top, to move them along with the function when
+                    // reordering
+                    if let Some(region_end) = region_end_comment.take() {
+                        for i in (0..elements.len()).rev() {
+                            if matches!(elements[i].token_kind, GDScriptTokenKind::Method(_, _, _))
+                            {
+                                let has_region = elements[i]
+                                    .attached_comments
+                                    .iter()
+                                    .any(|c| c.trim().starts_with("#region"));
+                                if has_region {
+                                    elements[i].trailing_comments.push(region_end.clone());
+                                    break;
+                                }
+                            }
+                        }
+                    }
 
                     elements.push(GDScriptTokensWithComments {
                         token_kind: element,
                         attached_comments: combined_comments,
+                        trailing_comments: Vec::new(),
+                        original_text: text,
+                        start_byte: node.start_byte(),
+                        end_byte: node.end_byte(),
+                    });
+                    pending_comments.clear();
+                    pending_annotations.clear();
+                } else {
+                    // We create unknown element for unhandled nodes to preserve
+                    // them. Given how the module works, if we don't do that the
+                    // nodes will be dropped.
+                    elements.push(GDScriptTokensWithComments {
+                        token_kind: GDScriptTokenKind::Unknown(text.clone()),
+                        attached_comments: pending_comments.clone(),
+                        trailing_comments: Vec::new(),
                         original_text: text,
                         start_byte: node.start_byte(),
                         end_byte: node.end_byte(),
@@ -686,11 +818,18 @@ fn build_reordered_code(
                 output.push('\n');
             }
         }
-
-        // Finally, insert the token's original text (function, variable, etc.)
+        // Insert the token's original text (function, variable, etc.)
         output.push_str(&current_token.original_text);
         if !current_token.original_text.ends_with('\n') {
             output.push('\n');
+        }
+        // After inserting the token, we also add any trailing comments that were
+        // found right after it in the original code (like #endregion after a function)
+        for comment in &current_token.trailing_comments {
+            output.push_str(comment);
+            if !comment.ends_with('\n') {
+                output.push('\n');
+            }
         }
 
         previous_token_kind = Some(current_token_type);
