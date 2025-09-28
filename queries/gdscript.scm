@@ -172,6 +172,8 @@
  . (comment)? @do_nothing)
 
 (comment) @append_empty_softline @prepend_input_softline
+(region_start) @append_empty_softline @prepend_input_softline  
+(region_end) @append_empty_softline @prepend_input_softline
 
 ; Allow one blank line before following statements
 ([(return_statement)
@@ -191,6 +193,8 @@
   (while_statement)
   (match_statement)
   (comment)
+  (region_start)
+  (region_end)
   (annotation)] @allow_blank_line_before)
 
 (setget) @prepend_indent_start @append_indent_end
