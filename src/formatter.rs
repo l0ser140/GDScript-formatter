@@ -365,8 +365,21 @@ impl Formatter {
                         if last_comment_is_doc_comment {
                             let mut comment_node_index = m.captures.len() - 2;
 
+                            let first_comment_node = m.captures[1].node;
+                            let first_comment_is_inline_comment =
+                                first_comment_node.start_position().row
+                                    == first_node.start_position().row;
+                            // ignore n first nodes when searching for the first docstring comment node
+                            // in case if the first comment is an inline comment we ignore
+                            // two nodes: first statement node and inline comment node
+                            // otherwise we ignore only the first statement node
+                            let mut amount_of_nodes_to_ignore = 1;
+                            if first_comment_is_inline_comment {
+                                amount_of_nodes_to_ignore += 1;
+                            }
+
                             // find first documentation comment node
-                            while comment_node_index > 2
+                            while comment_node_index > amount_of_nodes_to_ignore
                                 && m.captures[comment_node_index - 1].node.start_position().row
                                     == m.captures[comment_node_index].node.start_position().row - 1
                             {

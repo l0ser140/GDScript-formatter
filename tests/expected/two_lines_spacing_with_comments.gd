@@ -6,6 +6,12 @@ func test2() -> void:
 	pass
 
 
+# Multiline docstring
+# another line
+func test2() -> void:
+	pass
+
+
 var a # case 2
 
 
