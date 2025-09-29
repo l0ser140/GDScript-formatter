@@ -32,7 +32,7 @@ pub fn format_gdscript_with_config(
 ) -> Result<String, Box<dyn std::error::Error>> {
     let mut formatter = Formatter::new(content.to_owned(), config.clone());
 
-    formatter.format()?.postprocess().reorder();
+    formatter.preprocess().format()?.postprocess().reorder();
     formatter.finish()
 }
 
@@ -118,6 +118,14 @@ impl Formatter {
                 );
             }
         };
+        self
+    }
+
+    /// This function runs over the content before going through topiary.
+    /// It is used to prepare the content for formatting or save performance by
+    /// pre-applying rules that could be performance-intensive through topiary.
+    #[inline(always)]
+    fn preprocess(&mut self) -> &mut Self {
         self
     }
 
