@@ -85,11 +85,8 @@
 (class_definition) @prepend_hardline
 (class_definition extends: (extends_statement "extends" @prepend_space))
 
-(source
-    (class_name_statement
-        extends: (extends_statement) @append_hardline (#delimiter! "\n")))
-(source
-    (extends_statement) @append_hardline (#delimiter! "\n"))
+(source (class_name_statement extends: (extends_statement) @append_hardline))
+(source (extends_statement) @append_hardline)
 (source (class_name_statement (name) @append_hardline))
 
 ; CONST DEFINITIONS
