@@ -14,7 +14,7 @@
 //! rules have too much performance overhead when applied through Topiary.
 use std::{collections::VecDeque, io::BufWriter};
 
-use regex::{Regex, RegexBuilder};
+use regex::{Regex, RegexBuilder, Replacer};
 use topiary_core::{Language, Operation, TopiaryQuery, formatter_tree};
 use tree_sitter::{Parser, Point, Query, QueryCursor, StreamingIterator, Tree};
 
@@ -165,15 +165,30 @@ impl Formatter {
         //   - consists out of alphanumeric characters
         //   - consists out of any characters (except new lines) between double quotes
         // - must contain at least one new line character between `extends_name` and optional doc comment
-        // - may contain doc string that starts with `##` and ends with new line character
+        // - may contain multiple doc comment lines that starts with `##` and ends with a new line character
         let re = RegexBuilder::new(
-            r#"(?P<extends_line>^extends )(?P<extends_name>([a-zA-Z0-9]+|".*?"))\n+(^(?P<doc>##.*?)$)?"#,
+            r#"(?P<extends_line>^extends )(?P<extends_name>([a-zA-Z0-9]+|".*?"))\n+(?P<doc>(?:^##.*\n)*)(?P<EOF>\z)?"#,
         )
         .multi_line(true)
         .build()
         .expect("regex should compile");
 
-        self.regex_replace_all_outside_strings(re, "$extends_line$extends_name\n$doc\n");
+        self.regex_replace_all_outside_strings(re, |caps: &regex::Captures| {
+            let extends_line = caps.name("extends_line").unwrap().as_str();
+            let extends_name = caps.name("extends_name").unwrap().as_str();
+            let doc = caps
+                .name("doc")
+                .map(|m| m.as_str())
+                .unwrap_or_default()
+                .trim_end(); // remove last new line from doc comment because we add a new line manually
+            // insert new line only if we are not at the end of file
+            let blank_new_line = if caps.name("EOF").is_some() { "" } else { "\n" };
+
+            format!(
+                "{}{}\n{}{}",
+                extends_line, extends_name, doc, blank_new_line
+            )
+        });
 
         self
     }
@@ -237,7 +252,7 @@ impl Formatter {
     /// outside of strings (simple or multiline).
     /// Use this to make post-processing changes needed for formatting but that
     /// shouldn't affect strings in the source code.
-    fn regex_replace_all_outside_strings(&mut self, re: Regex, rep: &str) {
+    fn regex_replace_all_outside_strings<R: Replacer>(&mut self, re: Regex, mut rep: R) {
         let mut iter = re.captures_iter(&self.content).peekable();
         if iter.peek().is_none() {
             return;
@@ -264,7 +279,7 @@ impl Formatter {
             }
 
             let mut replacement = String::new();
-            capture.expand(rep, &mut replacement);
+            rep.replace_append(&capture, &mut replacement);
 
             let new_end_byte = start_byte + replacement.len();
 
