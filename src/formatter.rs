@@ -126,14 +126,16 @@ impl Formatter {
     /// pre-applying rules that could be performance-intensive through topiary.
     #[inline(always)]
     fn preprocess(&mut self) -> &mut Self {
-        self.remove_newlines_after_extends_statement()
+        // self.remove_newlines_after_extends_statement()
+        self
     }
 
     /// This function runs over the content after going through topiary. We use it
     /// to clean up/balance out the output.
     #[inline(always)]
     fn postprocess(&mut self) -> &mut Self {
-        self.fix_dangling_semicolons()
+        self.add_newlines_after_extends_statement()
+            .fix_dangling_semicolons()
             .fix_dangling_commas()
             .remove_trailing_commas_from_preload()
             .postprocess_tree_sitter()
@@ -154,23 +156,25 @@ impl Formatter {
         Ok(self.content)
     }
 
-    /// This function removes additional new line characters after `extends_statement`.
+    /// This function adds additional new line characters after `extends_statement`.
     #[inline(always)]
-    fn remove_newlines_after_extends_statement(&mut self) -> &mut Self {
+    fn add_newlines_after_extends_statement(&mut self) -> &mut Self {
         // This regex matches substrings which:
-        // - must NOT contain "#" or "\n" characters between new line and "extends" keyword
-        // - must end with at least one new line character
+        // - must start wtih "extends" keyword
         // - must contain `extends_name` character sequence that satisfies one of the following conditions:
         //   - consists out of alphanumeric characters
         //   - consists out of any characters (except new lines) between double quotes
+        // - must contain at least one new line character between `extends_name` and optional doc comment
+        // - may contain doc string that starts with `##` and ends with new line character
         let re = RegexBuilder::new(
-            r#"(?P<extends_line>^[^#\n]*extends )(?P<extends_name>([a-zA-Z0-9]+|".*?"))\n(\n*)"#,
+            r#"(?P<extends_line>^extends )(?P<extends_name>([a-zA-Z0-9]+|".*?"))\n+(^(?P<doc>##.*?)$)?"#,
         )
         .multi_line(true)
         .build()
         .expect("regex should compile");
 
-        self.regex_replace_all_outside_strings(re, "$extends_line$extends_name\n");
+        self.regex_replace_all_outside_strings(re, "$extends_line$extends_name\n$doc\n");
+
         self
     }
 

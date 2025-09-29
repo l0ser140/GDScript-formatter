@@ -87,9 +87,9 @@
 
 (source
     (class_name_statement
-        extends: (extends_statement) @append_delimiter @append_hardline (#delimiter! "\n")))
+        extends: (extends_statement) @append_hardline (#delimiter! "\n")))
 (source
-    (extends_statement) @append_delimiter @append_hardline (#delimiter! "\n"))
+    (extends_statement) @append_hardline (#delimiter! "\n"))
 (source (class_name_statement (name) @append_hardline))
 
 ; CONST DEFINITIONS
