@@ -192,7 +192,10 @@
   (comment)
   (region_start)
   (region_end)
-  (annotation)] @allow_blank_line_before)
+  (annotation)
+  (function_definition)
+  (class_definition)
+  (constructor_definition)] @allow_blank_line_before)
 
 (setget) @prepend_indent_start @append_indent_end
 (setget ":" @prepend_antispace)
