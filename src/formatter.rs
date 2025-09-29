@@ -412,7 +412,9 @@ impl GdTree {
 
         let ts_root = cursor.node();
         let root = GdTreeNode {
+            parent_id: None,
             grammar_id: ts_root.grammar_id(),
+            grammar_name: ts_root.grammar_name(),
             children: Vec::new(),
         };
         nodes.push(root);
@@ -430,7 +432,9 @@ impl GdTree {
 
                 let child_id = nodes.len();
                 let child = GdTreeNode {
+                    parent_id: Some(parent_node_id),
                     grammar_id: ts_child.grammar_id(),
+                    grammar_name: ts_child.grammar_name(),
                     children: Vec::new(),
                 };
                 nodes.push(child);
@@ -442,7 +446,49 @@ impl GdTree {
             }
         }
 
-        GdTree { nodes }
+        let mut gd_tree = GdTree { nodes };
+        gd_tree.fix_class_name_extends();
+        gd_tree
+    }
+
+    /// Moves `extends_statement` to be a direct sibling of `class_name_statement` instead of its child.
+    fn fix_class_name_extends(&mut self) {
+        // Since class_name is always at the top level of the tree, we need to only iterate over root's children
+        for (child_index, &child_id) in self.nodes[0].children.iter().enumerate() {
+            let child = &self.nodes[child_id];
+
+            // We first search for a class_name_statement node
+            if child.grammar_name != "class_name_statement" {
+                continue;
+            }
+
+            // If this class extends from anything, extends_statement will be the second child,
+            // because the first child will be the name of the class
+            if child.children.len() < 2 {
+                // This class doesn't extend from anything explicitly, and since there can only be one
+                // class_name_statement node in a script, we can safely return
+                return;
+            }
+            let second_child_id = child.children[1];
+            let second_child = &self.nodes[second_child_id];
+
+            if second_child.grammar_name != "extends_statement" {
+                // Same as above
+                return;
+            }
+
+            // When we found it, we move it to be a direct sibling of class_name_statement node
+            let class_name_node = &mut self.nodes[child_id];
+            let extends_node_id = class_name_node.children.remove(1);
+
+            let root = &mut self.nodes[0];
+            root.children.insert(child_index + 1, extends_node_id);
+
+            let extends_node = &mut self.nodes[extends_node_id];
+            extends_node.parent_id = Some(0);
+
+            return;
+        }
     }
 }
 
@@ -489,7 +535,9 @@ impl PartialEq for GdTree {
 }
 
 struct GdTreeNode {
+    parent_id: Option<usize>,
     grammar_id: u16,
+    grammar_name: &'static str,
     children: Vec<usize>,
 }
 
