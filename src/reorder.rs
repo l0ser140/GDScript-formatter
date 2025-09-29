@@ -252,12 +252,13 @@ fn extract_tokens_to_reorder(
     // We need to check if the comments are contiguous with the declaration they are
     // attached to.
     let mut class_docstring_comments = Vec::new();
-    let mut found_non_comment_non_class = false;
+    let mut class_docstring_comments_rows = Vec::new();
     for (node, text) in &all_nodes {
         match node.kind() {
             "comment" => {
-                if text.trim_start().starts_with("##") && !found_non_comment_non_class {
+                if text.trim_start().starts_with("##") {
                     class_docstring_comments.push(text.clone());
+                    class_docstring_comments_rows.push(node.start_position().row);
                 }
             }
             "class_name_statement" | "extends_statement" | "annotation" => {
@@ -266,7 +267,24 @@ fn extract_tokens_to_reorder(
             // Any other element means we're past the top of the file, so we stop
             // collecting the class docstring
             _ => {
-                found_non_comment_non_class = true;
+                // if the last node of the docstring is immediately followed by the current node
+                if class_docstring_comments_rows
+                    .last()
+                    .is_some_and(|row| row + 1 == node.start_position().row)
+                {
+                    // count how many rows are belong to the statement docstring
+                    let statement_docstring_rows = class_docstring_comments_rows
+                        .iter()
+                        .rev()
+                        .zip((0..).map(|i| class_docstring_comments_rows.last().unwrap() - i))
+                        .take_while(|(actual, expected)| **actual == *expected)
+                        .count();
+                    class_docstring_comments
+                        .truncate(class_docstring_comments.len() - statement_docstring_rows);
+                    class_docstring_comments_rows
+                        .truncate(class_docstring_comments_rows.len() - statement_docstring_rows);
+                }
+                break;
             }
         }
     }
@@ -304,7 +322,7 @@ fn extract_tokens_to_reorder(
             "comment" => {
                 // We already processed class docstring comments, so we skip them here
                 // This may look inefficient but in practice it should not have much impact
-                if text.trim_start().starts_with("##") && class_docstring_comments.contains(&text) {
+                if class_docstring_comments_rows.contains(&node.start_position().row) {
                     continue;
                 } else {
                     pending_comments.push(text);
