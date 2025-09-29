@@ -2,6 +2,29 @@
 
 This file documents the changes made to the formatter with each release. This project uses [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
+## Release 0.11.0 (2025-09-29)
+
+This release improves the formatter's performance by up to 10% compared to previous release, fixes several issues with safe mode, and refines the handling of docstrings and region.
+
+### Added
+
+- Formatting support for class documentation comments
+- Improved spacing logic for inline comments in cases where we need to apply two lines of spacing
+
+### Changed
+
+- Improved the performance of `class_name` and `extends` queries
+- Updated safe mode help message to warn about rare cases where it may not catch all formatting issues
+
+### Fixed
+
+- Safe mode incorrectly parsing `extends` statements as children of `class_name` statements
+- `#endregion` comments immediately following `#region` comments being collapsed
+- Missing empty lines between class documentation comments and following statements
+- Multiple empty lines after `extends` statements (now we ensure there is only one empty line)
+- Godot add-on: Download URL for Windows users failing due to incorrect file extension
+- Failing reorder test cases were cleaned up and corrected
+
 ## Release 0.10.1 (2025-09-28)
 
 ### Changed
