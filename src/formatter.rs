@@ -166,7 +166,7 @@ impl Formatter {
         // - must contain at least one new line character between `extends_name` and optional doc comment
         // - may contain multiple doc comment lines that starts with `##` and ends with a new line character
         let re = RegexBuilder::new(
-            r#"(?P<extends_line>^extends )(?P<extends_name>([a-zA-Z0-9]+|".*?"))\n+(?P<doc>(?:^##.*\n)*)(?P<EOF>\z)?"#,
+            r#"(?P<extends_line>^extends )(?P<extends_name>([a-zA-Z0-9]+|".*?"))\n+(?P<doc>(?:^##.*\n)*)\n*(?P<EOF>\z)?"#,
         )
         .multi_line(true)
         .build()
@@ -175,11 +175,7 @@ impl Formatter {
         self.regex_replace_all_outside_strings(re, |caps: &regex::Captures| {
             let extends_line = caps.name("extends_line").unwrap().as_str();
             let extends_name = caps.name("extends_name").unwrap().as_str();
-            let doc = caps
-                .name("doc")
-                .map(|m| m.as_str())
-                .unwrap_or_default()
-                .trim_end(); // remove last new line from doc comment because we add a new line manually
+            let doc = caps.name("doc").map(|m| m.as_str()).unwrap_or_default();
             // insert new line only if we are not at the end of file
             let blank_new_line = if caps.name("EOF").is_some() { "" } else { "\n" };
 
