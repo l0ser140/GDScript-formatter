@@ -75,8 +75,10 @@ struct Args {
         short,
         long,
         help = "Enable safe mode. This mode ensures that after formatting, the code still has the same syntax and structure \
-        as before. If not, formatting is canceled. This offers some protection against the formatter failing on new syntax \
-        at the cost of a small little extra running time. Currently incompatible with --reorder-code.",
+        as when initially parsed. If not, formatting is canceled.\n \
+        But this offers a good amount protection against the formatter failing on new syntax \
+        at the cost of a small little extra running time. Currently incompatible with --reorder-code.\n \
+        WARNING: this is not a perfect solution. Some rare edge cases may still lead to syntax changes.",
         conflicts_with = "reorder_code"
     )]
     safe: bool,
