@@ -1,5 +1,5 @@
 use gdscript_formatter::FormatterConfig;
-use gdscript_formatter::formatter::{format_gdscript, format_gdscript_with_config};
+use gdscript_formatter::formatter::format_gdscript_with_config;
 use similar::{ChangeTag, TextDiff};
 use std::fs;
 use std::path::Path;
@@ -39,53 +39,46 @@ fn assert_formatted_eq(result: &str, expected: &str, file_path: &Path) {
 }
 
 fn test_file(file_path: &Path) {
-    let file_name = file_path.file_name().expect("path is not a file path");
-
-    let input_path = file_path;
-    let expected_path = file_path
-        .parent()
-        .unwrap()
-        .parent()
-        .unwrap()
-        .join("expected/")
-        .join(file_name);
-
-    let input_content =
-        fs::read_to_string(&input_path).expect(&format!("Failed to read {}", input_path.display()));
-    let expected_content = fs::read_to_string(&expected_path)
-        .expect(&format!("Failed to read {}", expected_path.display()));
-
-    let result = format_gdscript(&input_content)
-        .expect(&format!("Failed to format {}", input_path.display()));
-
-    assert_formatted_eq(&result, &expected_content, &input_path);
+    test_file_with_config(file_path, &FormatterConfig::default(), true);
 }
 
 fn test_reorder_file(file_path: &Path) {
-    let file_name = file_path.file_name().expect("path is not a file path");
-
-    let input_path = file_path;
-    let expected_path = file_path
-        .parent()
-        .unwrap()
-        .parent()
-        .unwrap()
-        .join("expected/")
-        .join(file_name);
-
-    let input_content =
-        fs::read_to_string(&input_path).expect(&format!("Failed to read {}", input_path.display()));
-    let expected_content = fs::read_to_string(&expected_path)
-        .expect(&format!("Failed to read {}", expected_path.display()));
-
-    let result = format_gdscript_with_config(
-        &input_content,
+    test_file_with_config(
+        file_path,
         &FormatterConfig {
             reorder_code: true,
             ..Default::default()
         },
-    )
-    .expect(&format!("Failed to format {}", input_path.display()));
+        true,
+    );
+}
+
+fn test_file_with_config(file_path: &Path, config: &FormatterConfig, check_idempotence: bool) {
+    let file_name = file_path.file_name().expect("path is not a file path");
+
+    let input_path = file_path;
+    let expected_path = file_path
+        .parent()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .join("expected/")
+        .join(file_name);
+
+    let input_content =
+        fs::read_to_string(&input_path).expect(&format!("Failed to read {}", input_path.display()));
+    let expected_content = fs::read_to_string(&expected_path)
+        .expect(&format!("Failed to read {}", expected_path.display()));
+
+    let result = format_gdscript_with_config(&input_content, config)
+        .expect(&format!("Failed to format {}", input_path.display()));
 
     assert_formatted_eq(&result, &expected_content, &input_path);
+
+    if check_idempotence {
+        let second_result = format_gdscript_with_config(&result, config)
+            .expect(&format!("Failed to format {}", input_path.display()));
+        eprintln!("Checking idempotence: ");
+        assert_formatted_eq(&second_result, &result, &input_path);
+    }
 }
