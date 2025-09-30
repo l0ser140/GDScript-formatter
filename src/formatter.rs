@@ -166,7 +166,7 @@ impl Formatter {
         // - must contain at least one new line character between `extends_name` and optional doc comment
         // - may contain multiple doc comment lines that starts with `##` and ends with a new line character
         let re = RegexBuilder::new(
-            r#"(?P<extends_line>^extends )(?P<extends_name>([a-zA-Z0-9]+|".*?"))\n+(?P<doc>(?:^##.*\n)*)\n*(?P<EOF>\z)?"#,
+            r#"(?P<extends_line>^extends )(?P<extends_name>([a-zA-Z0-9]+|".*?"))\n+((?P<doc>(?:^##.*\n)+)(?:\z|\n))?\n*(?P<EOF>\z)?"#,
         )
         .multi_line(true)
         .build()
