@@ -19,29 +19,29 @@ This project aims to conform to the official [GDScript style guide](https://docs
 
 ## Installing and running the formatter
 
-You can find binaries for Windows, macOS, and Linux in the [releases tab](https://github.com/GDQuest/godot-gdscript-formatter-tree-sitter/releases) of this repository. Download the binary for your platform, unzip it, rename it to the command name you want (e.g. `gdscript-format`) and place it somewhere in your system PATH.
+You can find binaries for Windows, macOS, and Linux in the [releases tab](https://github.com/GDQuest/godot-gdscript-formatter-tree-sitter/releases) of this repository. Download the binary for your platform, unzip it, rename it to the command name you want (e.g. `gdscript-formatter`) and place it somewhere in your system PATH.
 
 Alternatively for Arch Linux, there is the community maintained AUR Package [gdscript-formatter-bin](https://aur.archlinux.org/packages/gdscript-formatter-bin).
 
 To format a file, run:
 
 ```bash
-gdscript-format path/to/file.gd
+gdscript-formatter path/to/file.gd
 ```
 
 Use the `--safe` flag to add a safety check that prevents overwriting files if the formatter makes unwanted changes (any change that would modify the code meaning, like removing a piece of functional code). This is useful when you use a development version of the formatter or when you want to be extra careful:
 
 ```bash
-gdscript-format --safe path/to/file.gd
+gdscript-formatter --safe path/to/file.gd
 ```
 
 Format with check mode, to use in a build system (exit code 1 if changes needed):
 
 ```bash
-gdscript-format --check path/to/file.gd
+gdscript-formatter --check path/to/file.gd
 ```
 
-To see other possible options, run `gdscript-format` without any arguments.
+To see other possible options, run `gdscript-formatter` without any arguments.
 
 ## Linting GDScript files
 
@@ -173,7 +173,7 @@ obj._private_method() # gdlint-ignore
     "GDScript": {
       "formatter": {
         "external": {
-          "command": "gdscript-format",
+          "command": "gdscript-formatter",
           "arguments": []
         }
       }
@@ -225,7 +225,7 @@ As a reminder: **don't leave this on when working on an important project withou
    - **Name**: GDScript Formatter
    - **File Type**: GDScript
    - **Scope**: Current File
-   - **Program**: `gdscript-format` (or write the full path to the binary if it's not in your **PATH**)
+   - **Program**: `gdscript-formatter` (or write the full path to the binary if it's not in your **PATH**)
    - **Arguments**: `$FilePath$` or `$FilePath$ --reorder-code`
    - **Output Paths to refresh**: `$FilePath$`
    - **Working Directory**: `$ModuleFilePath$`

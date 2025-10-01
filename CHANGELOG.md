@@ -238,7 +238,7 @@ This release greatly improves the performance of the formatter, which makes it f
 - Improved module documentation and docstrings
 - Vertical spacing logic to account for multi-line comments/docstrings before definitions
 - Refactored formatter to use more idiomatic Rust (the formatter is now a struct and multiline module comments are docstrings)
-- `gdscript-format` is now the default binary for `cargo run`
+- `gdscript-formatter` is now the default binary for `cargo run`
 
 ### Fixed
 
