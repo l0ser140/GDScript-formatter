@@ -52,7 +52,8 @@ impl Formatter {
             .set_language(&tree_sitter_gdscript::LANGUAGE.into())
             .unwrap();
         let tree = parser.parse(&content, None).unwrap();
-        let input_tree = GdTree::from_ts_tree(&tree);
+        let mut input_tree = GdTree::from_ts_tree(&tree, content.as_bytes());
+        input_tree.postprocess();
 
         Self {
             content,
@@ -146,7 +147,7 @@ impl Formatter {
         if self.config.safe {
             self.tree = self.parser.parse(&self.content, None).unwrap();
 
-            let output_tree = GdTree::from_ts_tree(&self.tree);
+            let output_tree = GdTree::from_ts_tree(&self.tree, self.content.as_bytes());
             if self.input_tree != output_tree {
                 return Err("Code structure has changed after formatting".into());
             }
@@ -450,15 +451,17 @@ struct GdTree {
 
 impl GdTree {
     /// Constructs a new `GdTree` from `TSTree`.
-    fn from_ts_tree(tree: &Tree) -> Self {
+    fn from_ts_tree(tree: &Tree, source: &[u8]) -> Self {
         let mut cursor = tree.walk();
         let mut nodes = Vec::new();
 
         let ts_root = cursor.node();
+
         let root = GdTreeNode {
             parent_id: None,
             grammar_id: ts_root.grammar_id(),
             grammar_name: ts_root.grammar_name(),
+            text: None,
             children: Vec::new(),
         };
         nodes.push(root);
@@ -474,11 +477,25 @@ impl GdTree {
                     continue;
                 }
 
+                // Get node's text in the source code (e.g. variable's name)
+                // None if this node is not a leaf node
+                let text = if ts_child.child(0).is_none() {
+                    let range = ts_child.range();
+                    Some(
+                        str::from_utf8(&source[range.start_byte..range.end_byte])
+                            .unwrap()
+                            .to_string(),
+                    )
+                } else {
+                    None
+                };
+
                 let child_id = nodes.len();
                 let child = GdTreeNode {
                     parent_id: Some(parent_node_id),
                     grammar_id: ts_child.grammar_id(),
                     grammar_name: ts_child.grammar_name(),
+                    text,
                     children: Vec::new(),
                 };
                 nodes.push(child);
@@ -490,15 +507,21 @@ impl GdTree {
             }
         }
 
-        let mut gd_tree = GdTree { nodes };
-        gd_tree.fix_class_name_extends();
-        gd_tree
+        GdTree { nodes }
+    }
+
+    fn postprocess(&mut self) {
+        // During formatting we make changes that modify the syntax tree, some of these changes are expected,
+        // so we have to adjust the syntax tree in order for safe mode to work properly.
+        self.move_extends_statement();
+        self.move_annotations();
     }
 
     /// Moves `extends_statement` to be a direct sibling of `class_name_statement` instead of its child.
-    fn fix_class_name_extends(&mut self) {
+    fn move_extends_statement(&mut self) {
         // Since class_name is always at the top level of the tree, we need to only iterate over root's children
-        for (child_index, &child_id) in self.nodes[0].children.iter().enumerate() {
+        for child_index in (0..self.nodes[0].children.len()).rev() {
+            let child_id = self.nodes[0].children[child_index];
             let child = &self.nodes[child_id];
 
             // We first search for a class_name_statement node
@@ -509,16 +532,14 @@ impl GdTree {
             // If this class extends from anything, extends_statement will be the second child,
             // because the first child will be the name of the class
             if child.children.len() < 2 {
-                // This class doesn't extend from anything explicitly, and since there can only be one
-                // class_name_statement node in a script, we can safely return
-                return;
+                continue;
             }
+
             let second_child_id = child.children[1];
             let second_child = &self.nodes[second_child_id];
 
             if second_child.grammar_name != "extends_statement" {
-                // Same as above
-                return;
+                continue;
             }
 
             // When we found it, we move it to be a direct sibling of class_name_statement node
@@ -530,8 +551,127 @@ impl GdTree {
 
             let extends_node = &mut self.nodes[extends_node_id];
             extends_node.parent_id = Some(0);
+        }
+    }
 
-            return;
+    fn move_annotations(&mut self) {
+        let language: &tree_sitter::Language = &tree_sitter_gdscript::LANGUAGE.into();
+        let annotations_grammar_id = language.id_for_node_kind("annotations", true);
+
+        let mut stack = Vec::new();
+        stack.push(0);
+
+        while let Some(parent_id) = stack.pop() {
+            // We need to modify the index when we delete nodes
+            let mut index = self.nodes[parent_id].children.len();
+            while index > 0 {
+                index -= 1;
+                let child_id = self.nodes[parent_id].children[index];
+                let child_grammar_name = self.nodes[child_id].grammar_name;
+
+                // We do the same in inner classes
+                if child_grammar_name == "class_definition" {
+                    stack.push(child_id);
+                    continue;
+                }
+
+                // Function annotations are always placed on a new line after formatting
+                if child_grammar_name == "function_definition" {
+                    let function = &self.nodes[child_id];
+
+                    if function.children.is_empty() {
+                        continue;
+                    }
+
+                    let Some(annotations_id) = function.children.get(0).cloned() else {
+                        continue;
+                    };
+                    let annotations = &mut self.nodes[annotations_id];
+
+                    // We check if this function has any annotations as first child
+                    if annotations.grammar_name != "annotations" {
+                        // If the first child is not annotations, then this function doesn't have any
+                        continue;
+                    }
+
+                    // Annotations are children of the (annotations) node, so we need to flatten them
+                    let flatten_annotations = annotations.children.drain(..).collect::<Vec<_>>();
+
+                    // Annotations node is now an orphan
+                    // We could remove it from nodes, but it's too much trouble, just pretend it's not there
+                    self.nodes[child_id].children.remove(0);
+
+                    let new_parent = &mut self.nodes[parent_id];
+                    // Insert annotations before the function
+                    // Iterating in reverse because nodes will push other nodes down in the tree,
+                    // so the first annotation needs to be inserted last
+                    for annotation_id in flatten_annotations.into_iter().rev() {
+                        new_parent.children.insert(index, annotation_id);
+                    }
+                } else if child_grammar_name == "variable_statement" {
+                    // We move @onready and @export annotations on the same line as the variable after formatting,
+                    // that means we need to move these annotations to be children of the variable_statement node
+                    // We move from the current index back to 0, searching for any annotations
+                    let annotations_to_move = (0..index)
+                        .rev()
+                        .map_while(|i| {
+                            let child_id = self.nodes[parent_id].children[i];
+                            let child = &self.nodes[child_id];
+                            if child.grammar_name != "annotation" {
+                                return None;
+                            }
+                            let annotation_name =
+                                self.nodes[child.children[0]].text.as_deref().unwrap();
+                            if annotation_name != "onready" && annotation_name != "export" {
+                                return None;
+                            }
+                            let parent = &mut self.nodes[parent_id];
+                            // When we found one, we remove it from the parent and collect them in a vector
+                            let annotation_id = parent.children.remove(i);
+                            index -= 1;
+                            Some(annotation_id)
+                        })
+                        .collect::<Vec<_>>();
+
+                    if annotations_to_move.is_empty() {
+                        continue;
+                    }
+
+                    let mut annotations_node_exists = false;
+
+                    let variable_node = &self.nodes[child_id];
+                    let variable_first_child_id = variable_node.children[0];
+                    let variable_first_child = &mut self.nodes[variable_first_child_id];
+
+                    let (annotations_node, annotations_node_id) =
+                        // If the first child is (annotations) node, then we add annotations to it
+                        if variable_first_child.grammar_name == "annotations" {
+                            annotations_node_exists = true;
+                            (variable_first_child, variable_first_child_id)
+                        // If variable doesn't already have (annotations) node, we create a new one
+                        } else {
+                            let annotations = GdTreeNode {
+                                parent_id: Some(child_id),
+                                grammar_id: annotations_grammar_id,
+                                grammar_name: "annotations",
+                                text: None,
+                                children: Vec::new(),
+                            };
+                            let annotations_id = self.nodes.len();
+                            self.nodes.push(annotations);
+                            (&mut self.nodes[annotations_id], annotations_id)
+                        };
+
+                    for annotation_id in annotations_to_move {
+                        annotations_node.children.insert(0, annotation_id);
+                    }
+
+                    if !annotations_node_exists {
+                        let variable_node = &mut self.nodes[child_id];
+                        variable_node.children.insert(0, annotations_node_id);
+                    }
+                }
+            }
         }
     }
 }
@@ -582,6 +722,7 @@ struct GdTreeNode {
     parent_id: Option<usize>,
     grammar_id: u16,
     grammar_name: &'static str,
+    text: Option<String>,
     children: Vec<usize>,
 }
 
