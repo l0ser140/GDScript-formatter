@@ -2,6 +2,21 @@
 
 This file documents the changes made to the formatter with each release. This project uses [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
+## Release 0.11.1 (2025-10-01)
+
+This release fixes issues with class docstring formatting and comments at the end of functions most notably.
+
+### Added
+
+- Idempotence checks to all tests to ensure formatted code remains unchanged when formatted again
+- Test cases for trailing comments and await expressions
+
+### Fixed
+
+- Docstrings being incorrectly attached to classes instead of following statements during code reordering
+- Comments at the very end of functions being incorrectly moved to a new line
+- Await expressions being incorrectly formatted when used with `not`
+
 ## Release 0.11.0 (2025-09-29)
 
 This release improves the formatter's performance by up to 10% compared to previous release, fixes several issues with safe mode, and refines the handling of docstrings and region.
