@@ -229,11 +229,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     } else if !args.stdout {
         terminal_clear_line();
-        eprintln!(
-            "\rFormatted {} file{}",
-            total_files,
-            if total_files == 1 { "" } else { "s" }
-        );
+        if total_files == 1 {
+            eprintln!(
+                "\rFormatted {}",
+                input_gdscript_files[0].display()
+            );
+        } else {
+            eprintln!(
+                "\rFormatted {} files",
+                total_files
+            );
+        }
     }
 
     Ok(())
