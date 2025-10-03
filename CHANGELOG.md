@@ -2,6 +2,21 @@
 
 This file documents the changes made to the formatter with each release. This project uses [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
+## Release 0.12.0 (2025-10-03)
+
+### Added
+
+- New `lint` command with 17 code style and quality rules and warnings to help catch common issues
+- File name is now printed when formatting a single file
+
+### Changed
+
+- Updated documentation to consistently use `gdscript-formatter` instead of `gdscript-format`
+
+### Fixed
+
+- Annotations not being parsed correctly in safe mode
+
 ## Release 0.11.1 (2025-10-01)
 
 This release fixes issues with class docstring formatting and comments at the end of functions most notably.
