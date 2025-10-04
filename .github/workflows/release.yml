@@ -45,12 +45,6 @@ jobs:
         with:
           targets: ${{ matrix.target }}
 
-      # This is a tool that should cache the Rust dependencies and improve build times.
-      - name: Setup cache
-        uses: Swatinem/rust-cache@v2
-        with:
-          key: ${{ matrix.target }}
-
       # This is a toolchain to build cross-platform binaries with rust. We use
       # it for other architectures and OSes than the build runner's.
       - name: Install cross
