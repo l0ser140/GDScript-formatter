@@ -40,7 +40,8 @@ struct FormatterOutput {
 /// https://docs.godotengine.org/en/stable/tutorials/scripting/gdscript/gdscript_styleguide.html
 #[clap(
     // Use the version number directly from Cargo.toml at compile time
-    version = env!("CARGO_PKG_VERSION")
+    version = env!("CARGO_PKG_VERSION"),
+    max_term_width = 120
 )]
 struct Args {
     /// The GDScript file(s) to format. If no file paths are provided, the
