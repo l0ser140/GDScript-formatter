@@ -136,12 +136,12 @@ obj._private_method() # gdlint-ignore
 
 ### List of linter rules
 
-- `function-name` - validates function names (`snake_case`, `\_private_snake_case`)
+- `function-name` - validates function names (`snake_case`, `_private_snake_case`)
 - `class-name` - validates class names (`PascalCase`)
 - `signal-name` - validates signal names (`snake_case`)
-- `variable-name` - validates class variable names (`snake_case` or `\_private_snake_case`)
-- `function-argument-name` - validates function argument names (`snake_case` or `\_private_snake_case`)
-- `loop-variable-name` - validates loop variable names (`snake_case` or `\_private_snake_case`)
+- `variable-name` - validates class variable names (`snake_case` or `_private_snake_case`)
+- `function-argument-name` - validates function argument names (`snake_case` or `_private_snake_case`)
+- `loop-variable-name` - validates loop variable names (`snake_case` or `_private_snake_case`)
 - `enum-name` - validates enum names (`PascalCase`)
 - `enum-member-name` - validates enum element names (`CONSTANT_CASE`)
 - `constant-name` - validates constant names (`CONSTANT_CASE`)
