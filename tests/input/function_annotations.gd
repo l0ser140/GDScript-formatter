@@ -1,4 +1,4 @@
-@rpc func foo():
+@abstract func foo():
 	pass
 
 

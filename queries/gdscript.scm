@@ -169,7 +169,7 @@
  . (comment)? @do_nothing)
 
 (comment) @append_empty_softline @prepend_input_softline
-(region_start) @append_empty_softline @prepend_input_softline  
+(region_start) @append_empty_softline @prepend_input_softline
 (region_end) @append_empty_softline @prepend_input_softline
 
 ; Allow one blank line before following statements
@@ -238,7 +238,6 @@
 (annotation) @append_space
 ((annotation (identifier) @append_space) @append_empty_softline . (comment)? @do_nothing (#not-match? @append_space "^(onready|export)$"))
 (annotation (arguments "(" @prepend_antispace))
-(function_definition (annotations (annotation) @append_hardline))
 
 ; This is used to preserve new lines after semicolons for people who use them on
 ; all code lines
