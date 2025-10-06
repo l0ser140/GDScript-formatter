@@ -2,6 +2,25 @@
 
 This file documents the changes made to the formatter with each release. This project uses [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
+## Release 0.13.0 (2025-10-06)
+
+### Added
+
+- `max_term_width` configuration option now set to 120 characters by default
+
+### Changed
+
+- Improved `--help` and `-h` output for better clarity
+- Updated the tree-sitter GDScript parser to the latest version
+- Function annotations now preserve input formatting and allow inline annotations with function definitions
+
+### Fixed
+
+- Safe mode no longer moves inline annotations in functions
+- CI: Removed rust cache as it cannot work for the current build process
+- Fixed issue with comments dedented from a function body causing next lines to be dedented too
+- Fixed reorder mode dropping comments in one edge case (multiple commented lines at different indent levels at the end of a function)
+
 ## Release 0.12.0 (2025-10-03)
 
 ### Added
