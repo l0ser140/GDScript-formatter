@@ -16,7 +16,7 @@ func do_thing() -> void:
 	if true:
 		# this is a comment inside of the function block
 		pass
-		
+
 		# this is a comment at the end of the function block
 		# it should stay inside of this function block
 
@@ -25,3 +25,9 @@ func do_another_thing() -> void:
 	pass
 
 	# likewise, this comment should stay inside of this function block
+
+
+func test_function():
+	var a = "test"
+# This comment should stay inside of the function body
+	print(a)
