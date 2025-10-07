@@ -2,6 +2,12 @@
 
 This file documents the changes made to the formatter with each release. This project uses [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
+## Release 0.13.1 (2025-10-07)
+
+## Fixed
+
+- Fixed an issue preventing the program from building and releasing the latest version.
+
 ## Release 0.13.0 (2025-10-06)
 
 ### Added
