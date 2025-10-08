@@ -137,6 +137,7 @@ impl Formatter {
         self.add_newlines_after_extends_statement()
             .fix_dangling_semicolons()
             .fix_dangling_commas()
+            .fix_trailing_spaces()
             .remove_trailing_commas_from_preload()
             .postprocess_tree_sitter()
     }
@@ -220,6 +221,17 @@ impl Formatter {
             .expect("dangling comma regex should compile");
 
         self.regex_replace_all_outside_strings(re, "$1,");
+        self
+    }
+
+    /// This function removes trailing spaces at the end of lines.
+    #[inline(always)]
+    fn fix_trailing_spaces(&mut self) -> &mut Self {
+        let re = RegexBuilder::new(r"[ \t]+$")
+            .multi_line(true)
+            .build()
+            .expect("trailing spaces regex should compile");
+        self.regex_replace_all_outside_strings(re, "");
         self
     }
 
