@@ -159,6 +159,22 @@ obj._private_method() # gdlint-ignore
 > [!NOTE]
 > If you managed to make the formatter work in a code editor that isn't listed here, consider contributing to this section or sharing your findings in [this](https://github.com/GDQuest/GDScript-formatter/issues/26) issue.
 
+In this section, you'll find instructions for setting up the formatter in several code editors.
+
+As a reminder: **don't turn this on when working on an important project without using a version control system like Git!**.
+
+### VSCode
+
+1. Install the [godot-format extension](https://marketplace.visualstudio.com/items?itemName=DoHe.godot-format) in VSCode. Press `Ctrl+P` and run:
+
+```
+ext install DoHe.godot-format
+```
+
+2. This extension ships with the formatter binary pre-installed, so you don't need to download the formatter separately.
+
+Once installed, visit the [extension page](https://marketplace.visualstudio.com/items?itemName=DoHe.godot-format) to see the available settings and set your preferences.
+
 ### Zed
 
 1. Install the formatter (see instructions above).
@@ -214,8 +230,6 @@ Keep in mind, using gdscript with Helix [requires more configuration](https://gi
 auto-format = true
 ```
 
-As a reminder: **don't leave this on when working on an important project without using a VCS!**.
-
 ### JetBrains Rider
 
 1. First, install the formatter on your computer.
@@ -232,7 +246,6 @@ As a reminder: **don't leave this on when working on an important project withou
    - You can optionally check any of the checkboxes for auto-save and triggering the watcher when files change outside the editor.
    - Keep the box for `Create output file from stdout` unchecked.
 
-As a reminder: **don't turn this on when working on an important project without using a VCS like Git!**.
 
 If you lose work because of the formatter, you can usually get it back with a simple "undo" (Cmd/Ctrl + Z). This will show you the "undo reload from disk" popup. You can also check the local history by right-clicking on the file in the project explorer and selecting `Local History > Show History`.
 
