@@ -2,9 +2,12 @@
 name = "gdscript-formatter"
 version = "0.13.1"
 edition = "2024"
-description = "A GDScript code formatter using Topiary and Tree-sitter"
+description = "A GDScript code formatter and linter using Topiary and Tree-sitter"
 license = "MIT"
 repository = "https://github.com/gdquest/gdscript-formatter"
+readme = "README.md"
+keywords = ["godot", "gdscript", "format", "lint"]
+categories = ["command-line-utilities", "development-tools"]
 default-run = "gdscript-formatter"
 
 [dependencies]
