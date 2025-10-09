@@ -85,8 +85,43 @@ jobs:
           name: GDScript formatter ${{ github.ref_name }}
           body: |
             A fast code formatter for GDScript in Godot 4.
+
+            You can learn how to install, use, configure, and integrate the formatter into your workflow on this page:
+
+            https://www.gdquest.com/library/gdscript_formatter/
           files: |
             *.zip
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  package-godot-addon:
+    name: Package the Godot add-on
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Create godot-addon.zip
+        run: |
+          zip -r godot-addon.zip addons/
+        shell: bash
+
+      - name: Create/Update Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: GDScript formatter ${{ github.ref_name }}
+          body: |
+            A fast code formatter for GDScript in Godot 4.
+
+            You can learn how to install, use, configure, and integrate the formatter into your workflow on this page:
+
+            https://www.gdquest.com/library/gdscript_formatter/
+          files: |
+            godot-addon.zip
           draft: false
           prerelease: false
         env:
