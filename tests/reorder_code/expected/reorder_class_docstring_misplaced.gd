@@ -2,11 +2,11 @@ class_name TestClass
 extends Node
 
 
-## This is the class docstring
-## It has multiple lines.
-func a():
+func b():
 	pass
 
 
-func b():
+## This is the class docstring
+## It has multiple lines.
+func a():
 	pass

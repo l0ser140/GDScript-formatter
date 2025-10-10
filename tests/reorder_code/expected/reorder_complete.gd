@@ -56,25 +56,25 @@ func _exit_tree():
 	pass
 
 
-func get_public_property() -> float:
-	return regular_variable
-
-
 @rpc("authority", "call_remote", "reliable")
 func public_method() -> int:
 	return TEST_CONSTANT
+
+
+func get_public_property() -> float:
+	return regular_variable
 
 
 func set_public_property(value: float):
 	regular_variable = value
 
 
-func _get_private_property() -> bool:
-	return _private_regular
-
-
 func _private_method() -> String:
 	return _PRIVATE_CONSTANT
+
+
+func _get_private_property() -> bool:
+	return _private_regular
 
 
 func _set_private_property(value: bool):
