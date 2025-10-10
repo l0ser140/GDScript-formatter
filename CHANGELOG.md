@@ -2,6 +2,24 @@
 
 This file documents the changes made to the formatter with each release. This project uses [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
+## Release 0.14.0 (2025-10-10)
+
+### Added
+
+- Linting support to the Godot addon
+- Instructions on how to use the formatter in VSCode to the README
+- CI action to run tests on push
+- CI job to package the Godot add-on to zip it automatically on releases
+- Remove trailing whitespace when formatting (outside of strings)
+
+### Changed
+
+- Removed alphabetic reordering when using the --reorder-code option
+
+### Fixed
+
+- Comment indentation test case
+
 ## Release 0.13.1 (2025-10-07)
 
 ## Fixed
