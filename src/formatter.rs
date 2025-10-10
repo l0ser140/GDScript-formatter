@@ -53,7 +53,6 @@ impl Formatter {
             .unwrap();
         let tree = parser.parse(&content, None).unwrap();
         let mut input_tree = GdTree::from_ts_tree(&tree, content.as_bytes());
-        input_tree.postprocess();
 
         Self {
             content,
@@ -145,6 +144,7 @@ impl Formatter {
     #[inline(always)]
     fn finish(mut self) -> Result<String, Box<dyn std::error::Error>> {
         if self.config.safe {
+            self.input_tree.postprocess();
             self.tree = self.parser.parse(&self.content, None).unwrap();
 
             let output_tree = GdTree::from_ts_tree(&self.tree, self.content.as_bytes());
@@ -587,8 +587,9 @@ impl GdTree {
                             if child.grammar_name != "annotation" {
                                 return None;
                             }
-                            let annotation_name =
-                                self.nodes[child.children[0]].text.as_deref().unwrap();
+                            let Some(annotation_name) = &self.nodes[child.children[0]].text else {
+                                return None;
+                            };
                             if annotation_name != "onready" && annotation_name != "export" {
                                 return None;
                             }
