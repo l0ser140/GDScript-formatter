@@ -4,9 +4,9 @@ extends Node
 ## It has multiple lines.
 
 
-func a():
+func b():
 	pass
 
 
-func b():
+func a():
 	pass

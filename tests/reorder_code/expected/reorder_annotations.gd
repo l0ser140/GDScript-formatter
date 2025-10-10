@@ -2,10 +2,10 @@ class_name Test
 extends Node
 
 
-func a():
+@rpc("authority", "call_remote", "reliable")
+func my_rpc():
 	pass
 
 
-@rpc("authority", "call_remote", "reliable")
-func my_rpc():
+func a():
 	pass

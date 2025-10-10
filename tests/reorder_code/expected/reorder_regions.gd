@@ -2,7 +2,7 @@ class_name Test
 extends Node
 
 
-func a():
+func c():
 	pass
 
 
@@ -12,7 +12,7 @@ func bar():
 #endregion
 
 
-func c():
+func a():
 	pass
 
 

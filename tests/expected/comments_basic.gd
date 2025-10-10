@@ -30,5 +30,5 @@ func do_another_thing() -> void:
 
 func test_function():
 	var a = "test"
-# This comment should stay inside of the function body
+	# This comment should stay inside of the function body
 	print(a)

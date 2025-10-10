@@ -137,27 +137,6 @@ impl GDScriptTokenKind {
         }
     }
 
-    /// Returns the name of the element. This is used to sort elements of the
-    /// same type alphabetically.
-    pub fn get_name(&self) -> &str {
-        match self {
-            GDScriptTokenKind::ClassAnnotation(name) => name,
-            GDScriptTokenKind::ClassName(name) => name,
-            GDScriptTokenKind::Extends(name) => name,
-            GDScriptTokenKind::Docstring(name) => name,
-            GDScriptTokenKind::Signal(name, _) => name,
-            GDScriptTokenKind::Enum(name, _) => name,
-            GDScriptTokenKind::Constant(name, _) => name,
-            GDScriptTokenKind::StaticVariable(name, _) => name,
-            GDScriptTokenKind::ExportVariable(name, _) => name,
-            GDScriptTokenKind::RegularVariable(name, _) => name,
-            GDScriptTokenKind::OnReadyVariable(name, _) => name,
-            GDScriptTokenKind::Method(name, _, _) => name,
-            GDScriptTokenKind::InnerClass(name, _) => name,
-            GDScriptTokenKind::Unknown(name) => name,
-        }
-    }
-
     /// Returns whether this element is private (starts with underscore).
     pub fn is_private(&self) -> bool {
         match self {
@@ -744,7 +723,7 @@ fn sort_gdscript_tokens(
             return privacy_cmp;
         }
 
-        // Finally we sort alphabetically. We also handle the top annotations up here.
+        // Finally, we handle the top annotations
         match (&a.token_kind, &b.token_kind) {
             (
                 GDScriptTokenKind::ClassAnnotation(a_text),
@@ -767,7 +746,7 @@ fn sort_gdscript_tokens(
                 };
                 a_priority.cmp(&b_priority)
             }
-            _ => a.token_kind.get_name().cmp(b.token_kind.get_name()),
+            _ => std::cmp::Ordering::Equal,
         }
     });
 
