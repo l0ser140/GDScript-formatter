@@ -170,7 +170,7 @@ impl GDScriptLinter {
     ) -> Result<bool, Box<dyn std::error::Error>> {
         let gdscript_files: Vec<&PathBuf> = input_files
             .iter()
-            .filter(|path| path.extension().map_or(false, |ext| ext == "gd"))
+            .filter(|path| path.extension().is_some_and(|ext| ext == "gd"))
             .collect();
 
         if gdscript_files.is_empty() {
@@ -230,7 +230,7 @@ impl GDScriptLinter {
             sorted_lines.sort();
 
             for (i, &line_num) in sorted_lines.iter().enumerate() {
-                if let Some(line_issues) = line_issues.get(&line_num) {
+                if let Some(line_issues) = line_issues.get(line_num) {
                     println!("    {}:{}", file_path, line_num);
                     for issue in line_issues {
                         let (severity_str, severity_color) = match issue.severity {

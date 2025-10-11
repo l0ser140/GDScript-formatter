@@ -15,11 +15,11 @@ impl VariableNameRule {
     }
 
     fn is_load_call(&self, node: &Node, source_code: &str) -> bool {
-        if node.kind() == "call" {
-            if let Some(function_node) = node.child(0) {
-                let function_name = get_node_text(&function_node, source_code);
-                return function_name == "load" || function_name == "preload";
-            }
+        if node.kind() == "call"
+            && let Some(function_node) = node.child(0)
+        {
+            let function_name = get_node_text(&function_node, source_code);
+            return function_name == "load" || function_name == "preload";
         }
         false
     }

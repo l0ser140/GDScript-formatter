@@ -52,7 +52,7 @@ impl Formatter {
             .set_language(&tree_sitter_gdscript::LANGUAGE.into())
             .unwrap();
         let tree = parser.parse(&content, None).unwrap();
-        let mut input_tree = GdTree::from_ts_tree(&tree, content.as_bytes());
+        let input_tree = GdTree::from_ts_tree(&tree, content.as_bytes());
 
         Self {
             content,

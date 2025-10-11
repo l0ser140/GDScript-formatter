@@ -24,7 +24,7 @@ impl Rule for ComparisonWithItselfRule {
                 let right_text = get_node_text(&right_node, source_code);
 
                 if left_text == right_text {
-                    let (line, column) = get_line_column(&node);
+                    let (line, column) = get_line_column(node);
                     issues.push(LintIssue::new(
                         line,
                         column,
@@ -32,7 +32,7 @@ impl Rule for ComparisonWithItselfRule {
                         LintSeverity::Warning,
                         format!(
                             "Redundant comparison '{}' - comparing expression with itself",
-                            get_node_text(&node, source_code)
+                            get_node_text(node, source_code)
                         ),
                     ));
                 }

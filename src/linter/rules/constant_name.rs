@@ -19,11 +19,11 @@ impl ConstantNameRule {
     }
 
     fn is_preload_call(&self, node: &Node, source_code: &str) -> bool {
-        if node.kind() == "call" {
-            if let Some(function_node) = node.child(0) {
-                let function_name = get_node_text(&function_node, source_code);
-                return function_name == "preload";
-            }
+        if node.kind() == "call"
+            && let Some(function_node) = node.child(0)
+        {
+            let function_name = get_node_text(&function_node, source_code);
+            return function_name == "preload";
         }
 
         false
@@ -50,7 +50,7 @@ impl Rule for ConstantNameRule {
 
             if is_preload_const {
                 // For all load/preload constants, check load naming rules
-                if !self.is_valid_load_constant_name(&name) {
+                if !self.is_valid_load_constant_name(name) {
                     let (line, column) = get_line_column(&name_node);
                     issues.push(LintIssue::new(
                         line,
@@ -65,7 +65,7 @@ impl Rule for ConstantNameRule {
                 }
             } else {
                 // For regular constants, just check regular rules
-                if !self.is_valid_constant_name(&name) {
+                if !self.is_valid_constant_name(name) {
                     let (line, column) = get_line_column(&name_node);
                     issues.push(LintIssue::new(
                         line,

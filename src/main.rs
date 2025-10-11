@@ -207,7 +207,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let input_gdscript_files: Vec<&PathBuf> = args
         .input
         .iter()
-        .filter(|path| path.extension().map_or(false, |ext| ext == "gd"))
+        .filter(|path| path.extension().is_some_and(|ext| ext == "gd"))
         .collect();
 
     if input_gdscript_files.is_empty() {

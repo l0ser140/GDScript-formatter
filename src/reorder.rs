@@ -15,7 +15,7 @@ pub fn reorder_gdscript_elements(
     tree: &Tree,
     content: &str,
 ) -> Result<String, Box<dyn std::error::Error>> {
-    let tokens = extract_tokens_to_reorder(&tree, content)?;
+    let tokens = extract_tokens_to_reorder(tree, content)?;
     let ordered_elements = sort_gdscript_tokens(tokens);
     let reordered_content = build_reordered_code(ordered_elements, content);
 
@@ -274,7 +274,7 @@ fn extract_tokens_to_reorder(
     // annotations until we hit a declaration, at which point we attach the
     // collected comments/annotations to that declaration.
     for (node, text) in &all_nodes {
-        let reorderable_element = classify_element(*node, &text, content)?;
+        let reorderable_element = classify_element(*node, text, content)?;
         classified_elements.push(ClassifiedElement {
             node: *node,
             text: text.clone(),
@@ -796,6 +796,7 @@ fn build_reordered_code(
         };
 
         if needs_spacing {
+            #[allow(clippy::if_same_then_else)]
             if is_function {
                 output.push_str("\n\n");
             } else if is_inner_class && previous_token_kind == Some(TokenKind::Method) {
