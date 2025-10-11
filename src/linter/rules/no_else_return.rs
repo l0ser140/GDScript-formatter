@@ -65,10 +65,10 @@ impl Rule for NoElseReturnRule {
                         ));
                     }
 
-                    if let Some(elif_body) = child_node.child_by_field_name("body") {
-                        if !self.body_ends_with_return(&elif_body, source_code) {
-                            all_branches_return = false;
-                        }
+                    if let Some(elif_body) = child_node.child_by_field_name("body")
+                        && !self.body_ends_with_return(&elif_body, source_code)
+                    {
+                        all_branches_return = false;
                     }
                 } else if child_node.kind() == "else_clause" {
                     let (line, column) = get_line_column(&child_node);

@@ -15,17 +15,20 @@ impl Rule for StandaloneExpressionRule {
 
         if let Some(expr_child) = node.child(0) {
             let expr_kind = expr_child.kind();
-            if expr_kind != "call"
-                && expr_kind != "assignment"
-                && expr_kind != "augmented_assignment"
+            if expr_kind == "call"
+                || expr_kind == "assignment"
+                || expr_kind == "augmented_assignment"
             {
-                if matches!(
-                    expr_kind,
-                    "binary_operator" | "integer" | "float" | "string" | "true" | "false" | "null"
-                ) {
-                    let (line, column) = get_line_column(&expr_child);
-                    let expr_text = get_node_text(&expr_child, source_code);
-                    issues.push(LintIssue::new(
+                return issues;
+            }
+
+            if matches!(
+                expr_kind,
+                "binary_operator" | "integer" | "float" | "string" | "true" | "false" | "null"
+            ) {
+                let (line, column) = get_line_column(&expr_child);
+                let expr_text = get_node_text(&expr_child, source_code);
+                issues.push(LintIssue::new(
                         line,
                         column,
                         "standalone-expression".to_string(),
@@ -35,7 +38,6 @@ impl Rule for StandaloneExpressionRule {
                             expr_text
                         ),
                     ));
-                }
             }
         }
 
