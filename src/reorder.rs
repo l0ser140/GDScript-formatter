@@ -230,6 +230,17 @@ fn extract_tokens_to_reorder(
     // Notably a comment after the extends declaration might be a var or method docstring.
     // We need to check if the comments are contiguous with the declaration they are
     // attached to.
+
+    // Find the byte position of the first class_name or extends statement
+    // Any annotations before this position are class-level annotations
+    let first_class_declaration_byte = all_nodes
+        .iter()
+        .find(|(node, _)| {
+            node.kind() == "class_name_statement" || node.kind() == "extends_statement"
+        })
+        .map(|(node, _)| node.start_byte())
+        .unwrap_or(usize::MAX);
+
     let mut class_docstring_comments = Vec::new();
     let mut class_docstring_comments_rows = Vec::new();
     for (node, text) in &all_nodes {
@@ -274,7 +285,9 @@ fn extract_tokens_to_reorder(
     // annotations until we hit a declaration, at which point we attach the
     // collected comments/annotations to that declaration.
     for (node, text) in &all_nodes {
-        let reorderable_element = classify_element(*node, text, content)?;
+        let is_before_class_declaration = node.start_byte() < first_class_declaration_byte;
+        let reorderable_element =
+            classify_element(*node, text, content, is_before_class_declaration)?;
         classified_elements.push(ClassifiedElement {
             node: *node,
             text: text.clone(),
@@ -464,13 +477,11 @@ fn classify_element(
     node: Node,
     text: &str,
     content: &str,
+    is_before_class_declaration: bool,
 ) -> Result<Option<GDScriptTokenKind>, Box<dyn std::error::Error>> {
     match node.kind() {
         "annotation" => {
-            if text.starts_with("@tool")
-                || text.starts_with("@icon")
-                || text.starts_with("@static_unload")
-            {
+            if is_before_class_declaration {
                 Ok(Some(GDScriptTokenKind::ClassAnnotation(text.to_string())))
             } else {
                 Ok(None)
