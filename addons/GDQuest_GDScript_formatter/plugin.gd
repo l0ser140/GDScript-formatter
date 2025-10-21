@@ -125,7 +125,7 @@ func _exit_tree() -> void:
 		menu = null
 
 
-func shortcut_input(event: InputEvent) -> void:
+func _shortcut_input(event: InputEvent) -> void:
 	if not has_command(get_editor_setting(SETTING_FORMATTER_PATH)):
 		return
 	var shortcut := get_editor_setting(SETTING_SHORTCUT) as Shortcut
