@@ -1,0 +1,15 @@
+- id: gdscript-formatter
+  name: gdscript-formatter
+  description: 'GDScript-formatter'
+  entry: gdscript-formatter
+  language: rust
+  require_serial: false
+  types: [gdscript]
+
+- id: gdscript-linter
+  name: gdscript-linter
+  description: 'GDScript-formatter'
+  entry: gdscript-formatter lint
+  language: rust
+  require_serial: false
+  types: [gdscript]
